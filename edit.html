@@ -19,6 +19,7 @@
     --gap:10; --cellw:140; --voffset:0;
     --fs-venue:25; --fs-clock:24; --fs-heading:17;
     --fs-statnum:20; --fs-statlbl:8; --fs-tno:12; --fs-state:16;
+    --stat-h:50;
   }
   *{box-sizing:border-box;}
   [hidden]{display:none!important;}
@@ -59,12 +60,12 @@
 
   .stats{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:12px;}
   .stat{position:relative;background:var(--panel-2);border:1px solid var(--border);border-radius:12px;
-    padding:14px 5px 9px;text-align:center;}
+    height:calc(var(--stat-h) * 1px);padding:0 5px;text-align:center;
+    display:flex;align-items:center;justify-content:center;}
   .stat .lbl{position:absolute;top:7px;left:8px;font-family:'Work Sans',sans-serif;font-size:calc(var(--fs-statlbl) * 1px);
     color:var(--text-dim);letter-spacing:.02em;}
   .stat .num{font-family:'Bebas Neue',sans-serif;font-size:calc(var(--fs-statnum) * 1px);line-height:1;
-    font-variant-numeric:tabular-nums;margin-top:9px;}
-  .stat .num{color:var(--text);}
+    font-variant-numeric:tabular-nums;color:var(--text);}
 
   .grid{display:grid;grid-template-columns:repeat(2, calc(var(--cellw) * 1px));justify-content:center;
     gap:calc(var(--gap) * 1px);padding:18px;}
@@ -94,8 +95,8 @@
   .legend .i-tourney{background:var(--tourney);}
   .legend .i-rental{background:var(--rental);}
 
-  .detail-row{display:flex;flex-wrap:wrap;gap:5px 14px;margin-top:10px;font-family:'Work Sans',sans-serif;
-    font-size:11px;color:var(--text-dim);}
+  .detail-row{display:flex;flex-wrap:wrap;justify-content:space-between;gap:5px 14px;margin-top:10px;
+    font-family:'Work Sans',sans-serif;font-size:11px;color:var(--text-dim);}
   .detail-row b{font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:15px;color:var(--text);
     font-variant-numeric:tabular-nums;margin:0 2px;}
   .detail-row .latereg-tag{color:var(--gold);font-weight:600;}
@@ -181,9 +182,10 @@
           </div>
           <div class="detail-row">
             <span>トーナメントエントリー数 <b id="tourneyDisplay">0/0</b></span>
+            <span class="latereg-tag" id="lateregDisplay"></span>
           </div>
           <div class="detail-row">
-            <span class="latereg-tag" id="lateregDisplay"></span>
+            <span id="entryChipsDisplay">Entry ¥0/0chips</span>
           </div>
         </div>
 
@@ -217,6 +219,11 @@
       <label for="rVoffset">全体の縦位置</label>
       <input type="range" id="rVoffset" data-var="--voffset" min="-120" max="360" value="0">
       <output id="oVoffset">0</output>
+    </div>
+    <div class="control-row">
+      <label for="rStatH">集計欄の高さ</label>
+      <input type="range" id="rStatH" data-var="--stat-h" min="30" max="90" value="50">
+      <output id="oStatH">50</output>
     </div>
 
     <h2>文字サイズ</h2>
@@ -271,6 +278,14 @@
       <div class="time-row">
         <label for="lateregInput">レジクロ</label>
         <input type="time" id="lateregInput">
+      </div>
+    </div>
+    <div class="control-block">
+      <p class="control-label">Entry 金額 / スタートチップ</p>
+      <div class="select-pair">
+        <select id="entryFeeSelect" class="wheel-select"></select>
+        <span class="step-sep">/</span>
+        <select id="chipsSelect" class="wheel-select"></select>
       </div>
     </div>
 
@@ -353,11 +368,12 @@
   // ---- リングゲーム人数・トーナメントエントリー・レジクロ(すべてスクロール選択式) ----
   var ringCount = 0, tA = 0, tB = 0, lateregTime = '';
 
-  function populateSelect(sel, max){
-    for (var i = 0; i <= max; i++){
+  function populateSelect(sel, max, step){
+    step = step || 1;
+    for (var i = 0; i <= max; i += step){
       var opt = document.createElement('option');
       opt.value = i;
-      opt.textContent = i;
+      opt.textContent = i.toLocaleString('ja-JP');
       sel.appendChild(opt);
     }
   }
@@ -399,6 +415,18 @@
     }
   }
   setInterval(updateLateregCountdown, 30000);
+
+  var entryFee = 0, chips = 0;
+  var entryFeeSelect = document.getElementById('entryFeeSelect');
+  var chipsSelect = document.getElementById('chipsSelect');
+  populateSelect(entryFeeSelect, 20000, 100);
+  populateSelect(chipsSelect, 100000, 1000);
+  function updateEntryChipsDisplay(){
+    document.getElementById('entryChipsDisplay').textContent =
+      'Entry ¥' + entryFee.toLocaleString('ja-JP') + '/' + chips.toLocaleString('ja-JP') + 'chips';
+  }
+  entryFeeSelect.addEventListener('change', function(){ entryFee = parseInt(entryFeeSelect.value, 10); updateEntryChipsDisplay(); });
+  chipsSelect.addEventListener('change', function(){ chips = parseInt(chipsSelect.value, 10); updateEntryChipsDisplay(); });
 
   // ---- スライダー ↔ CSS変数 ----
   var root = document.documentElement;
@@ -471,6 +499,7 @@
   updateRingDisplay();
   updateTourneyDisplay();
   updateLateregCountdown();
+  updateEntryChipsDisplay();
   setInterval(tick, 30000);
 })();
 </script>
