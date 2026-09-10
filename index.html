@@ -1,0 +1,398 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>POKER ROOM NINE テーブルステータス</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Zen+Kaku+Gothic+New:wght@500;700;900&family=Work+Sans:wght@400;500;600;700&display=swap">
+<style>
+  :root{
+    --bg:#0c0c10; --panel:#17171d; --panel-2:#1e1e26; --border:#2b2b34;
+    --text:#f2ede1; --text-dim:#9d968a;
+    --gold:#cdaf6d; --gold-soft:rgba(205,175,109,.14);
+    --green:#3fb673; --green-soft:rgba(63,182,115,.14);
+    --ring:#5970f3; --ring-soft:rgba(89,112,243,.14);
+    --tourney:#b9287b; --tourney-soft:rgba(185,40,123,.14);
+    --rental:#57bedc; --rental-soft:rgba(87,190,220,.14);
+    /* ---- 見た目の固定値。edit.htmlで調整した数値をここに反映する ---- */
+    --gap:10; --cellw:140; --voffset:0;
+    --fs-venue:25; --fs-clock:24; --fs-heading:17;
+    --fs-statnum:20; --fs-statlbl:8; --fs-tno:12; --fs-state:16;
+  }
+  *{box-sizing:border-box;}
+  [hidden]{display:none!important;}
+  body{background:#050506;color:var(--text);font-family:'Zen Kaku Gothic New',sans-serif;margin:0;
+    -webkit-tap-highlight-color:transparent;}
+  h1,h2{margin:0;text-wrap:balance;}
+  p{margin:0;}
+  .page{max-width:520px;margin:0 auto;padding:28px 20px 56px;}
+
+  .eyebrow{text-align:center;font-family:'Work Sans',sans-serif;font-size:11px;font-weight:600;
+    letter-spacing:.18em;text-transform:uppercase;color:var(--text-dim);margin-bottom:18px;}
+
+  /* ---------- frame = 保存画像そのもの。ストーリーズと同じ9:16 ---------- */
+  .frame-wrap{display:flex;justify-content:center;}
+  #frame{width:360px;height:640px;background:var(--bg);position:relative;overflow:hidden;
+    border-radius:8px;box-shadow:0 24px 60px -20px rgba(0,0,0,.7);flex:none;}
+
+  #card{width:320px;margin:calc(var(--voffset) * 1px) auto 0;
+    background:var(--panel);border:1px solid var(--border);border-radius:20px;overflow:hidden;}
+  .card-head{padding:20px 20px 16px;border-bottom:1px solid var(--border);}
+  .head-top{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;}
+  .venue{font-family:'Bebas Neue',sans-serif;font-size:calc(var(--fs-venue) * 1px);letter-spacing:.02em;
+    color:var(--text);white-space:nowrap;}
+  .clock-block{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex:none;}
+  .clock-lbl{font-family:'Work Sans',sans-serif;font-size:8px;font-weight:600;letter-spacing:.16em;
+    text-transform:uppercase;color:var(--text-dim);}
+  .flip-clock{display:flex;align-items:center;gap:2px;}
+  .flip-unit{position:relative;min-width:calc(var(--fs-clock) * .85px);background:#101014;color:var(--text);
+    font-family:'Bebas Neue',sans-serif;font-size:calc(var(--fs-clock) * 1px);line-height:1;text-align:center;
+    padding:6px 3px 5px;border-radius:4px;border:1px solid #050506;
+    box-shadow:0 2px 0 rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.05);
+    font-variant-numeric:tabular-nums;overflow:hidden;}
+  .flip-unit::after{content:'';position:absolute;left:0;right:0;top:50%;height:1px;
+    background:rgba(0,0,0,.6);transform:translateY(-.5px);}
+  .flip-colon{font-family:'Bebas Neue',sans-serif;font-size:calc(var(--fs-clock) * .8px);color:var(--text-dim);padding:0 1px;}
+  .subline{font-family:'Zen Kaku Gothic New',sans-serif;font-weight:700;font-size:calc(var(--fs-heading) * 1px);
+    letter-spacing:.02em;color:var(--gold);margin-top:9px;}
+
+  .stats{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:12px;}
+  .stat{position:relative;background:var(--panel-2);border:1px solid var(--border);border-radius:12px;
+    padding:14px 5px 9px;text-align:center;}
+  .stat .lbl{position:absolute;top:7px;left:8px;font-family:'Work Sans',sans-serif;font-size:calc(var(--fs-statlbl) * 1px);
+    color:var(--text-dim);letter-spacing:.02em;}
+  .stat .num{font-family:'Bebas Neue',sans-serif;font-size:calc(var(--fs-statnum) * 1px);line-height:1;
+    font-variant-numeric:tabular-nums;margin-top:9px;}
+  .stat.open .num{color:var(--green);}
+  .stat.ring .num{color:var(--ring);}
+  .stat.tourney .num{color:var(--tourney);}
+  .stat.rental .num{color:var(--rental);}
+
+  .grid{display:grid;grid-template-columns:repeat(2, calc(var(--cellw) * 1px));justify-content:center;
+    gap:calc(var(--gap) * 1px);padding:18px;}
+  .table-cell{position:relative;width:calc(var(--cellw) * 1px);height:calc(var(--cellw) * .8px);
+    border-radius:14px;border:1.5px solid transparent;
+    display:flex;align-items:center;justify-content:center;padding:9px;
+    cursor:pointer;user-select:none;transition:transform .12s ease;}
+  .table-cell:active{transform:scale(.96);}
+  .table-cell .tno{position:absolute;top:8px;left:10px;font-family:'Bebas Neue',sans-serif;
+    font-size:calc(var(--fs-tno) * 1px);letter-spacing:.02em;color:var(--text-dim);}
+  .table-cell .state{font-family:'Zen Kaku Gothic New',sans-serif;font-weight:900;font-size:calc(var(--fs-state) * 1px);
+    text-align:center;line-height:1.2;}
+  .table-cell.is-open{background:var(--green-soft);border-color:var(--green);}
+  .table-cell.is-open .state{color:var(--green);}
+  .table-cell.is-ring{background:var(--ring-soft);border-color:var(--ring);}
+  .table-cell.is-ring .state{color:var(--ring);}
+  .table-cell.is-tourney{background:var(--tourney-soft);border-color:var(--tourney);}
+  .table-cell.is-tourney .state{color:var(--tourney);}
+  .table-cell.is-rental{background:var(--rental-soft);border-color:var(--rental);}
+  .table-cell.is-rental .state{color:var(--rental);}
+
+  .legend{display:flex;justify-content:center;gap:10px;padding:0 14px 16px;flex-wrap:wrap;}
+  .legend span{display:flex;align-items:center;gap:4px;font-family:'Work Sans',sans-serif;font-size:9.5px;color:var(--text-dim);}
+  .legend i{width:8px;height:8px;border-radius:50%;display:inline-block;}
+  .legend .i-open{background:var(--green);}
+  .legend .i-ring{background:var(--ring);}
+  .legend .i-tourney{background:var(--tourney);}
+  .legend .i-rental{background:var(--rental);}
+
+  .detail-row{display:flex;flex-wrap:wrap;gap:5px 14px;margin-top:10px;font-family:'Work Sans',sans-serif;
+    font-size:11px;color:var(--text-dim);}
+  .detail-row b{font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:15px;color:var(--text);
+    font-variant-numeric:tabular-nums;margin:0 2px;}
+  .detail-row .latereg-tag{color:var(--gold);font-weight:600;}
+
+  .hint{text-align:center;font-family:'Work Sans',sans-serif;font-size:11px;color:var(--text-dim);
+    margin-top:16px;line-height:1.6;}
+
+  .control-block{margin-top:14px;padding:12px;border-radius:10px;background:var(--panel-2);border:1px solid var(--border);}
+  .control-block .control-label{font-family:'Work Sans',sans-serif;font-size:11px;color:var(--text-dim);margin-bottom:8px;}
+  .stepper{display:flex;align-items:center;gap:10px;}
+  .step-btn{width:30px;height:30px;border-radius:8px;border:1px solid var(--border);background:var(--panel);
+    color:var(--text);font-family:'Work Sans',sans-serif;font-size:16px;font-weight:700;line-height:1;
+    display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none;}
+  .step-btn:hover{border-color:var(--gold);}
+  .step-btn:active{transform:scale(.92);}
+  .step-value{font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--text);min-width:26px;text-align:center;
+    font-variant-numeric:tabular-nums;}
+  .stepper-pair{display:flex;align-items:center;gap:10px;}
+  .step-sep{font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--text-dim);}
+  .time-row{display:flex;align-items:center;gap:10px;margin-top:10px;}
+  .time-row label{font-family:'Work Sans',sans-serif;font-size:11px;color:var(--text-dim);flex:none;}
+  .time-row input[type="time"]{background:var(--panel);border:1px solid var(--border);border-radius:8px;
+    color:var(--text);font-family:'Work Sans',sans-serif;font-size:13px;padding:6px 8px;flex:1;}
+
+  .controls{margin-top:28px;padding-top:22px;border-top:1px solid var(--border);}
+  .save-btn{width:100%;padding:13px;border-radius:10px;border:1px solid var(--gold);
+    background:var(--gold-soft);color:var(--gold);font-family:'Work Sans',sans-serif;font-size:13px;
+    font-weight:700;letter-spacing:.02em;cursor:pointer;}
+  .save-btn:hover{background:var(--gold);color:#171008;}
+  .save-btn:disabled{opacity:.5;cursor:default;}
+  .reset-btn{margin-top:10px;width:100%;padding:12px;border-radius:10px;border:1px solid var(--border);
+    background:var(--panel);color:var(--text-dim);font-family:'Work Sans',sans-serif;font-size:12.5px;
+    font-weight:600;cursor:pointer;}
+  .reset-btn:hover{color:var(--text);border-color:var(--gold);}
+  .save-status{margin-top:8px;min-height:14px;font-family:'Work Sans',sans-serif;font-size:10.5px;
+    color:var(--text-dim);text-align:center;}
+  .controls-note{margin-top:10px;font-family:'Work Sans',sans-serif;font-size:10.5px;color:var(--text-dim);
+    text-align:center;line-height:1.6;}
+
+  @media (prefers-reduced-motion:reduce){
+    .table-cell{transition:none;}
+  }
+</style>
+</head>
+<body>
+
+<div class="page">
+  <p class="eyebrow">Tap a table to update its status</p>
+
+  <div class="frame-wrap">
+    <div id="frame">
+      <div id="card">
+        <div class="card-head">
+          <div class="head-top">
+            <h1 class="venue">POKER ROOM NINE</h1>
+            <div class="clock-block">
+              <p class="clock-lbl">Updated</p>
+              <div class="flip-clock">
+                <span class="flip-unit" id="flipH1">0</span>
+                <span class="flip-unit" id="flipH2">0</span>
+                <span class="flip-colon">:</span>
+                <span class="flip-unit" id="flipM1">0</span>
+                <span class="flip-unit" id="flipM2">0</span>
+              </div>
+            </div>
+          </div>
+          <p class="subline">【 現在の卓状況 】</p>
+          <div class="stats">
+            <div class="stat ring"><p class="lbl">リングゲーム</p><p class="num" id="statRing">0</p></div>
+            <div class="stat tourney"><p class="lbl">トーナメント</p><p class="num" id="statTourney">0</p></div>
+            <div class="stat rental"><p class="lbl">貸卓</p><p class="num" id="statRental">0</p></div>
+            <div class="stat open"><p class="lbl">空卓</p><p class="num" id="statOpen">0</p></div>
+          </div>
+          <div class="detail-row">
+            <span>リングゲーム稼働人数 <b id="ringCountDisplay">0</b>人</span>
+          </div>
+          <div class="detail-row">
+            <span>エントリー <b id="tourneyDisplay">0/0</b></span>
+            <span class="latereg-tag" id="lateregDisplay"></span>
+          </div>
+        </div>
+
+        <div class="grid" id="grid"></div>
+
+        <div class="legend">
+          <span><i class="i-open"></i>空卓</span>
+          <span><i class="i-ring"></i>リングゲーム</span>
+          <span><i class="i-tourney"></i>トーナメント</span>
+          <span><i class="i-rental"></i>貸卓</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <p class="hint">卓をタップすると状態が切り替わります(空卓 → リングゲーム → トーナメント → 貸卓 → 空卓)。集計と更新時刻は自動で反映されます。</p>
+
+  <div class="controls">
+    <div class="control-block">
+      <p class="control-label">リングゲーム稼働人数</p>
+      <div class="stepper">
+        <button class="step-btn" id="ringMinus" type="button">−</button>
+        <span class="step-value" id="ringStepVal">0</span>
+        <button class="step-btn" id="ringPlus" type="button">+</button>
+      </div>
+    </div>
+    <div class="control-block">
+      <p class="control-label">トーナメント 人数(a) / エントリー数(b)</p>
+      <div class="stepper-pair">
+        <div class="stepper">
+          <button class="step-btn" id="tAMinus" type="button">−</button>
+          <span class="step-value" id="tAVal">0</span>
+          <button class="step-btn" id="tAPlus" type="button">+</button>
+        </div>
+        <span class="step-sep">/</span>
+        <div class="stepper">
+          <button class="step-btn" id="tBMinus" type="button">−</button>
+          <span class="step-value" id="tBVal">0</span>
+          <button class="step-btn" id="tBPlus" type="button">+</button>
+        </div>
+      </div>
+      <div class="time-row">
+        <label for="lateregInput">レイトレジスト終了</label>
+        <input type="time" id="lateregInput">
+      </div>
+    </div>
+    <button class="save-btn" id="saveBtn">画像として保存</button>
+    <p class="save-status" id="saveStatus"></p>
+    <button class="reset-btn" id="resetBtn">全卓を空卓にリセット</button>
+    <p class="controls-note">保存すると、ストーリーズと同じ比率(9:16)の画像として保存されます。そのままストーリーズの背景としてアップロードできます。</p>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script>
+(function(){
+  var LABELS = {open:'空卓', ring:'リングゲーム', tourney:'トーナメント', rental:'貸卓'};
+  // 4卓、名前はA〜D。全卓が同じ4状態を巡回(制限なし)
+  var TABLES = [
+    {name:'A卓', states:['open','ring','tourney','rental'], initial:'open'},
+    {name:'B卓', states:['open','ring','tourney','rental'], initial:'open'},
+    {name:'C卓', states:['open','ring','tourney','rental'], initial:'open'},
+    {name:'D卓', states:['open','ring','tourney','rental'], initial:'open'}
+  ];
+
+  var grid = document.getElementById('grid');
+  var cells = [];
+
+  TABLES.forEach(function(t, i){
+    var cell = document.createElement('div');
+    cell.className = 'table-cell';
+    cell.dataset.state = t.initial;
+    cell.dataset.states = t.states.join(',');
+    cell.innerHTML = '<span class="tno">' + t.name + '</span><span class="state"></span>';
+    cell.addEventListener('click', (function(idx){
+      return function(){
+        var c = cells[idx];
+        var states = c.dataset.states.split(',');
+        var next = states[(states.indexOf(c.dataset.state) + 1) % states.length];
+        c.dataset.state = next;
+        render();
+      };
+    })(i));
+    grid.appendChild(cell);
+    cells.push(cell);
+  });
+
+  function render(){
+    var open = 0, ring = 0, tourney = 0, rental = 0;
+    cells.forEach(function(c){
+      var s = c.dataset.state;
+      c.classList.remove('is-open','is-ring','is-tourney','is-rental');
+      c.classList.add('is-' + s);
+      c.querySelector('.state').textContent = LABELS[s];
+      if (s === 'open') open++;
+      if (s === 'ring') ring++;
+      if (s === 'tourney') tourney++;
+      if (s === 'rental') rental++;
+    });
+    document.getElementById('statOpen').textContent = open;
+    document.getElementById('statRing').textContent = ring;
+    document.getElementById('statTourney').textContent = tourney;
+    document.getElementById('statRental').textContent = rental;
+  }
+
+  function tick(){
+    var d = new Date();
+    var hh = String(d.getHours()).padStart(2, '0');
+    var mm = String(d.getMinutes()).padStart(2, '0');
+    document.getElementById('flipH1').textContent = hh[0];
+    document.getElementById('flipH2').textContent = hh[1];
+    document.getElementById('flipM1').textContent = mm[0];
+    document.getElementById('flipM2').textContent = mm[1];
+  }
+
+  document.getElementById('resetBtn').addEventListener('click', function(){
+    cells.forEach(function(c){ c.dataset.state = 'open'; });
+    render();
+  });
+
+  // ---- リングゲーム人数・トーナメントエントリー・レイトレジスト ----
+  var ringCount = 0, tA = 0, tB = 0, lateregTime = '';
+  function clamp0(n){ return n < 0 ? 0 : n; }
+
+  function updateRingDisplay(){
+    document.getElementById('ringStepVal').textContent = ringCount;
+    document.getElementById('ringCountDisplay').textContent = ringCount;
+  }
+  document.getElementById('ringMinus').addEventListener('click', function(){ ringCount = clamp0(ringCount - 1); updateRingDisplay(); });
+  document.getElementById('ringPlus').addEventListener('click', function(){ ringCount = ringCount + 1; updateRingDisplay(); });
+
+  function updateTourneyDisplay(){
+    document.getElementById('tAVal').textContent = tA;
+    document.getElementById('tBVal').textContent = tB;
+    document.getElementById('tourneyDisplay').textContent = tA + '/' + tB;
+  }
+  document.getElementById('tAMinus').addEventListener('click', function(){ tA = clamp0(tA - 1); updateTourneyDisplay(); });
+  document.getElementById('tAPlus').addEventListener('click', function(){ tA = tA + 1; updateTourneyDisplay(); });
+  document.getElementById('tBMinus').addEventListener('click', function(){ tB = clamp0(tB - 1); updateTourneyDisplay(); });
+  document.getElementById('tBPlus').addEventListener('click', function(){ tB = tB + 1; updateTourneyDisplay(); });
+
+  var lateregInput = document.getElementById('lateregInput');
+  lateregInput.addEventListener('input', function(){
+    lateregTime = lateregInput.value;
+    updateLateregCountdown();
+  });
+
+  function updateLateregCountdown(){
+    var el = document.getElementById('lateregDisplay');
+    if (!lateregTime) { el.textContent = ''; return; }
+    var parts = lateregTime.split(':');
+    var target = new Date();
+    target.setHours(parseInt(parts[0], 10), parseInt(parts[1], 10), 0, 0);
+    var diffMs = target - new Date();
+    if (diffMs <= 0) {
+      el.textContent = 'レイトレジ終了';
+    } else {
+      el.textContent = 'レイトレジまで あと' + Math.ceil(diffMs / 60000) + '分';
+    }
+  }
+  setInterval(updateLateregCountdown, 30000);
+
+  // ---- 画像として保存(フレーム全体=9:16。写真アプリへの保存を優先) ----
+  var saveBtn = document.getElementById('saveBtn');
+  var saveStatus = document.getElementById('saveStatus');
+
+  saveBtn.addEventListener('click', function(){
+    if (typeof html2canvas !== 'function') {
+      saveStatus.textContent = '保存機能の読み込みに失敗しました。スクリーンショットをご利用ください。';
+      return;
+    }
+    saveBtn.disabled = true;
+    saveStatus.textContent = '画像を作成中...';
+    var frame = document.getElementById('frame');
+    var scale = 1080 / frame.offsetWidth;
+    html2canvas(frame, {backgroundColor: null, scale: scale}).then(function(canvas){
+      return new Promise(function(resolve){ canvas.toBlob(resolve, 'image/png'); });
+    }).then(function(blob){
+      var d = new Date();
+      var hh = String(d.getHours()).padStart(2, '0');
+      var mm = String(d.getMinutes()).padStart(2, '0');
+      var filename = 'POKER_ROOM_NINE_卓状況_' + hh + mm + '.png';
+      var file = new File([blob], filename, {type: 'image/png'});
+      var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+
+      if (isIOS && navigator.canShare && navigator.canShare({files: [file]})) {
+        return navigator.share({files: [file]}).then(function(){
+          saveStatus.textContent = '共有シートから「写真に保存」を選んでください';
+        });
+      }
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(function(){ URL.revokeObjectURL(url); }, 4000);
+      saveStatus.textContent = '保存しました';
+    }).catch(function(err){
+      if (err && err.name === 'AbortError') { saveStatus.textContent = ''; return; }
+      saveStatus.textContent = '保存できませんでした。スクリーンショットをご利用ください。';
+    }).finally(function(){
+      saveBtn.disabled = false;
+    });
+  });
+
+  render();
+  tick();
+  updateRingDisplay();
+  updateTourneyDisplay();
+  updateLateregCountdown();
+  setInterval(tick, 30000);
+})();
+</script>
+
+</body>
+</html>
