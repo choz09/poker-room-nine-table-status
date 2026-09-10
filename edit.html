@@ -85,11 +85,16 @@
   .legend .i-tourney{background:var(--tourney);}
   .legend .i-rental{background:var(--rental);}
 
-  .detail-row{display:flex;flex-wrap:wrap;justify-content:space-between;gap:5px 14px;margin-top:10px;
-    font-family:'Work Sans',sans-serif;font-size:11px;color:var(--text-dim);}
+  .detail-row{display:flex;flex-wrap:nowrap;justify-content:space-between;gap:8px;margin-top:10px;
+    font-family:'Work Sans',sans-serif;font-size:10.5px;color:var(--text-dim);}
+  .detail-row > span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;}
   .detail-row b{font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:15px;color:var(--text);
     font-variant-numeric:tabular-nums;margin:0 2px;}
+  .detail-row b.table-count{font-size:13px;}
   .detail-row .latereg-tag{color:var(--gold);font-weight:600;}
+  .tourney-group{margin-top:10px;padding-left:8px;border-left:2px solid var(--tourney);}
+  .tourney-group .detail-row{margin-top:6px;}
+  .tourney-group .detail-row:first-child{margin-top:0;}
 
   .hint{text-align:center;font-family:'Work Sans',sans-serif;font-size:11px;color:var(--text-dim);
     margin-top:16px;line-height:1.6;}
@@ -103,6 +108,8 @@
   .digit-select{width:38px;flex:none;background:var(--panel);border:1px solid var(--border);border-radius:6px;
     color:var(--text);font-family:'Bebas Neue',sans-serif;font-size:16px;text-align:center;padding:6px 2px;
     -webkit-appearance:menulist;appearance:menulist;}
+  .digit-preview{margin-top:6px;font-family:'Bebas Neue',sans-serif;font-size:16px;color:var(--gold);
+    font-variant-numeric:tabular-nums;}
   .time-row{display:flex;align-items:center;gap:10px;margin-top:10px;}
   .time-row label{font-family:'Work Sans',sans-serif;font-size:11px;color:var(--text-dim);flex:none;}
   .time-row input[type="time"]{background:var(--panel);border:1px solid var(--border);border-radius:8px;
@@ -166,14 +173,16 @@
           </div>
           <p class="subline">【 現在のテーブル状況 】</p>
           <div class="detail-row">
-            <span>リングゲーム参加人数 <b id="ringCountDisplay">0</b>人（<span id="ringTableCount">0</span>卓）</span>
+            <span>リングゲーム参加人数 <b id="ringCountDisplay">0</b>人（<b class="table-count" id="ringTableCount">0</b>卓）</span>
           </div>
-          <div class="detail-row">
-            <span>トーナメントエントリー数 <b id="tourneyDisplay">0/0</b>（<span id="tourneyTableCount">0</span>卓）</span>
-          </div>
-          <div class="detail-row">
-            <span id="entryChipsDisplay">Entry ¥0/0chips</span>
-            <span class="latereg-tag" id="lateregDisplay"></span>
+          <div class="tourney-group">
+            <div class="detail-row">
+              <span>トーナメントエントリー数 <b id="tourneyDisplay">0/0</b>（<b class="table-count" id="tourneyTableCount">0</b>卓）</span>
+            </div>
+            <div class="detail-row">
+              <span id="entryChipsDisplay">Entry ¥0/0chips</span>
+              <span class="latereg-tag" id="lateregDisplay"></span>
+            </div>
           </div>
         </div>
 
@@ -263,6 +272,7 @@
         <select class="digit-select"></select>
         <select class="digit-select"></select>
       </div>
+      <p class="digit-preview" id="entryPreview">¥0</p>
     </div>
     <div class="control-block">
       <p class="control-label">スタートチップ</p>
@@ -274,6 +284,7 @@
         <select class="digit-select"></select>
         <select class="digit-select"></select>
       </div>
+      <p class="digit-preview" id="chipsPreview">0</p>
     </div>
 
     <button class="save-btn" id="saveBtn">この見た目で画像を書き出す</button>
@@ -423,8 +434,16 @@
   }
 
   var entryFee = 0, chips = 0;
-  setupDigitGroup('entryDigits', function(v){ entryFee = v; updateEntryChipsDisplay(); });
-  setupDigitGroup('chipsDigits', function(v){ chips = v; updateEntryChipsDisplay(); });
+  setupDigitGroup('entryDigits', function(v){
+    entryFee = v;
+    document.getElementById('entryPreview').textContent = '¥' + entryFee.toLocaleString('ja-JP');
+    updateEntryChipsDisplay();
+  });
+  setupDigitGroup('chipsDigits', function(v){
+    chips = v;
+    document.getElementById('chipsPreview').textContent = chips.toLocaleString('ja-JP');
+    updateEntryChipsDisplay();
+  });
   function updateEntryChipsDisplay(){
     document.getElementById('entryChipsDisplay').textContent =
       'Entry ¥' + entryFee.toLocaleString('ja-JP') + '/' + chips.toLocaleString('ja-JP') + 'chips';
