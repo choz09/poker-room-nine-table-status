@@ -64,15 +64,12 @@
     color:var(--text-dim);letter-spacing:.02em;}
   .stat .num{font-family:'Bebas Neue',sans-serif;font-size:calc(var(--fs-statnum) * 1px);line-height:1;
     font-variant-numeric:tabular-nums;margin-top:9px;}
-  .stat.open .num{color:var(--green);}
-  .stat.ring .num{color:var(--ring);}
-  .stat.tourney .num{color:var(--tourney);}
-  .stat.rental .num{color:var(--rental);}
+  .stat .num{color:var(--text);}
 
   .grid{display:grid;grid-template-columns:repeat(2, calc(var(--cellw) * 1px));justify-content:center;
     gap:calc(var(--gap) * 1px);padding:18px;}
-  .table-cell{position:relative;width:calc(var(--cellw) * 1px);height:calc(var(--cellw) * .8px);
-    border-radius:14px;border:1.5px solid transparent;
+  .table-cell{position:relative;width:calc(var(--cellw) * 1px);height:calc(var(--cellw) * .55px);
+    border-radius:calc(var(--cellw) * .275px);border:1.5px solid transparent;
     display:flex;align-items:center;justify-content:center;padding:9px;
     cursor:pointer;user-select:none;transition:transform .12s ease;}
   .table-cell:active{transform:scale(.96);}
@@ -108,16 +105,11 @@
 
   .control-block{margin-top:14px;padding:12px;border-radius:10px;background:var(--panel-2);border:1px solid var(--border);}
   .control-block .control-label{font-family:'Work Sans',sans-serif;font-size:11px;color:var(--text-dim);margin-bottom:8px;}
-  .stepper{display:flex;align-items:center;gap:10px;}
-  .step-btn{width:30px;height:30px;border-radius:8px;border:1px solid var(--border);background:var(--panel);
-    color:var(--text);font-family:'Work Sans',sans-serif;font-size:16px;font-weight:700;line-height:1;
-    display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none;}
-  .step-btn:hover{border-color:var(--gold);}
-  .step-btn:active{transform:scale(.92);}
-  .step-value{font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--text);min-width:26px;text-align:center;
-    font-variant-numeric:tabular-nums;}
-  .stepper-pair{display:flex;align-items:center;gap:10px;}
+  .select-pair{display:flex;align-items:center;gap:10px;}
   .step-sep{font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--text-dim);}
+  .wheel-select{background:var(--panel);border:1px solid var(--border);border-radius:8px;
+    color:var(--text);font-family:'Bebas Neue',sans-serif;font-size:18px;padding:6px 8px;flex:1;
+    -webkit-appearance:menulist;appearance:menulist;}
   .time-row{display:flex;align-items:center;gap:10px;margin-top:10px;}
   .time-row label{font-family:'Work Sans',sans-serif;font-size:11px;color:var(--text-dim);flex:none;}
   .time-row input[type="time"]{background:var(--panel);border:1px solid var(--border);border-radius:8px;
@@ -165,7 +157,7 @@
               </div>
             </div>
           </div>
-          <p class="subline">【 現在の卓状況 】</p>
+          <p class="subline">【 現在のテーブル状況 】</p>
           <div class="stats">
             <div class="stat ring"><p class="lbl">リングゲーム</p><p class="num" id="statRing">0</p></div>
             <div class="stat tourney"><p class="lbl">トーナメント</p><p class="num" id="statTourney">0</p></div>
@@ -173,10 +165,12 @@
             <div class="stat open"><p class="lbl">空卓</p><p class="num" id="statOpen">0</p></div>
           </div>
           <div class="detail-row">
-            <span>リングゲーム稼働人数 <b id="ringCountDisplay">0</b>人</span>
+            <span>リングゲーム参加人数 <b id="ringCountDisplay">0</b>人</span>
           </div>
           <div class="detail-row">
-            <span>エントリー <b id="tourneyDisplay">0/0</b></span>
+            <span>トーナメントエントリー数 <b id="tourneyDisplay">0/0</b></span>
+          </div>
+          <div class="detail-row">
             <span class="latereg-tag" id="lateregDisplay"></span>
           </div>
         </div>
@@ -197,30 +191,18 @@
 
   <div class="controls">
     <div class="control-block">
-      <p class="control-label">リングゲーム稼働人数</p>
-      <div class="stepper">
-        <button class="step-btn" id="ringMinus" type="button">−</button>
-        <span class="step-value" id="ringStepVal">0</span>
-        <button class="step-btn" id="ringPlus" type="button">+</button>
-      </div>
+      <p class="control-label">リングゲーム参加人数</p>
+      <select id="ringSelect" class="wheel-select"></select>
     </div>
     <div class="control-block">
       <p class="control-label">トーナメント 人数(a) / エントリー数(b)</p>
-      <div class="stepper-pair">
-        <div class="stepper">
-          <button class="step-btn" id="tAMinus" type="button">−</button>
-          <span class="step-value" id="tAVal">0</span>
-          <button class="step-btn" id="tAPlus" type="button">+</button>
-        </div>
+      <div class="select-pair">
+        <select id="tASelect" class="wheel-select"></select>
         <span class="step-sep">/</span>
-        <div class="stepper">
-          <button class="step-btn" id="tBMinus" type="button">−</button>
-          <span class="step-value" id="tBVal">0</span>
-          <button class="step-btn" id="tBPlus" type="button">+</button>
-        </div>
+        <select id="tBSelect" class="wheel-select"></select>
       </div>
       <div class="time-row">
-        <label for="lateregInput">レイトレジスト終了</label>
+        <label for="lateregInput">レジクロ</label>
         <input type="time" id="lateregInput">
       </div>
     </div>
@@ -298,26 +280,34 @@
     render();
   });
 
-  // ---- リングゲーム人数・トーナメントエントリー・レイトレジスト ----
+  // ---- リングゲーム人数・トーナメントエントリー・レジクロ(すべてスクロール選択式) ----
   var ringCount = 0, tA = 0, tB = 0, lateregTime = '';
-  function clamp0(n){ return n < 0 ? 0 : n; }
 
+  function populateSelect(sel, max){
+    for (var i = 0; i <= max; i++){
+      var opt = document.createElement('option');
+      opt.value = i;
+      opt.textContent = i;
+      sel.appendChild(opt);
+    }
+  }
+
+  var ringSelect = document.getElementById('ringSelect');
+  populateSelect(ringSelect, 40);
   function updateRingDisplay(){
-    document.getElementById('ringStepVal').textContent = ringCount;
     document.getElementById('ringCountDisplay').textContent = ringCount;
   }
-  document.getElementById('ringMinus').addEventListener('click', function(){ ringCount = clamp0(ringCount - 1); updateRingDisplay(); });
-  document.getElementById('ringPlus').addEventListener('click', function(){ ringCount = ringCount + 1; updateRingDisplay(); });
+  ringSelect.addEventListener('change', function(){ ringCount = parseInt(ringSelect.value, 10); updateRingDisplay(); });
 
+  var tASelect = document.getElementById('tASelect');
+  var tBSelect = document.getElementById('tBSelect');
+  populateSelect(tASelect, 300);
+  populateSelect(tBSelect, 300);
   function updateTourneyDisplay(){
-    document.getElementById('tAVal').textContent = tA;
-    document.getElementById('tBVal').textContent = tB;
     document.getElementById('tourneyDisplay').textContent = tA + '/' + tB;
   }
-  document.getElementById('tAMinus').addEventListener('click', function(){ tA = clamp0(tA - 1); updateTourneyDisplay(); });
-  document.getElementById('tAPlus').addEventListener('click', function(){ tA = tA + 1; updateTourneyDisplay(); });
-  document.getElementById('tBMinus').addEventListener('click', function(){ tB = clamp0(tB - 1); updateTourneyDisplay(); });
-  document.getElementById('tBPlus').addEventListener('click', function(){ tB = tB + 1; updateTourneyDisplay(); });
+  tASelect.addEventListener('change', function(){ tA = parseInt(tASelect.value, 10); updateTourneyDisplay(); });
+  tBSelect.addEventListener('change', function(){ tB = parseInt(tBSelect.value, 10); updateTourneyDisplay(); });
 
   var lateregInput = document.getElementById('lateregInput');
   lateregInput.addEventListener('input', function(){
@@ -333,9 +323,9 @@
     target.setHours(parseInt(parts[0], 10), parseInt(parts[1], 10), 0, 0);
     var diffMs = target - new Date();
     if (diffMs <= 0) {
-      el.textContent = 'レイトレジ終了';
+      el.textContent = 'レジクロ ' + lateregTime + '（終了）';
     } else {
-      el.textContent = 'レイトレジまで あと' + Math.ceil(diffMs / 60000) + '分';
+      el.textContent = 'レジクロ ' + lateregTime + '（あと' + Math.ceil(diffMs / 60000) + '分）';
     }
   }
   setInterval(updateLateregCountdown, 30000);
