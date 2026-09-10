@@ -92,9 +92,12 @@
     font-variant-numeric:tabular-nums;margin:0 2px;}
   .detail-row b.table-count{font-size:13px;}
   .detail-row .latereg-tag{color:var(--gold);font-weight:600;}
+  .ring-group{margin-top:10px;padding-left:8px;border-left:2px solid var(--ring);}
   .tourney-group{margin-top:10px;padding-left:8px;border-left:2px solid var(--tourney);}
   .tourney-group .detail-row{margin-top:6px;}
   .tourney-group .detail-row:first-child{margin-top:0;}
+  .digit-comma{display:flex;align-items:center;flex:none;font-family:'Bebas Neue',sans-serif;
+    font-size:18px;color:var(--text-dim);}
 
   .hint{text-align:center;font-family:'Work Sans',sans-serif;font-size:11px;color:var(--text-dim);
     margin-top:16px;line-height:1.6;}
@@ -172,8 +175,10 @@
             </div>
           </div>
           <p class="subline">【 現在のテーブル状況 】</p>
-          <div class="detail-row">
-            <span>リングゲーム参加人数 <b id="ringCountDisplay">0</b>人（<b class="table-count" id="ringTableCount">0</b>卓）</span>
+          <div class="ring-group">
+            <div class="detail-row">
+              <span>リングゲーム参加人数 <b id="ringCountDisplay">0</b>人（<b class="table-count" id="ringTableCount">0</b>卓）</span>
+            </div>
           </div>
           <div class="tourney-group">
             <div class="detail-row">
@@ -181,6 +186,8 @@
             </div>
             <div class="detail-row">
               <span id="entryChipsDisplay">Entry ¥0/0chips</span>
+            </div>
+            <div class="detail-row">
               <span class="latereg-tag" id="lateregDisplay"></span>
             </div>
           </div>
@@ -268,6 +275,7 @@
         <select class="digit-select"></select>
         <select class="digit-select"></select>
         <select class="digit-select"></select>
+        <span class="digit-comma">,</span>
         <select class="digit-select"></select>
         <select class="digit-select"></select>
         <select class="digit-select"></select>
@@ -280,6 +288,7 @@
         <select class="digit-select"></select>
         <select class="digit-select"></select>
         <select class="digit-select"></select>
+        <span class="digit-comma">,</span>
         <select class="digit-select"></select>
         <select class="digit-select"></select>
         <select class="digit-select"></select>
