@@ -18,8 +18,7 @@
     /* ---- 見た目の固定値。edit.htmlで調整した数値をここに反映する ---- */
     --gap:10; --cellw:140; --voffset:0;
     --fs-venue:25; --fs-clock:24; --fs-heading:17;
-    --fs-statnum:20; --fs-statlbl:8; --fs-tno:12; --fs-state:16;
-    --stat-h:50;
+    --fs-tno:12; --fs-state:16;
   }
   *{box-sizing:border-box;}
   [hidden]{display:none!important;}
@@ -57,15 +56,6 @@
   .flip-colon{font-family:'Bebas Neue',sans-serif;font-size:calc(var(--fs-clock) * .8px);color:var(--text-dim);padding:0 1px;}
   .subline{font-family:'Zen Kaku Gothic New',sans-serif;font-weight:700;font-size:calc(var(--fs-heading) * 1px);
     letter-spacing:.02em;color:var(--gold);margin-top:9px;}
-
-  .stats{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:12px;}
-  .stat{position:relative;background:var(--panel-2);border:1px solid var(--border);border-radius:12px;
-    height:calc(var(--stat-h) * 1px);padding:0 5px;text-align:center;
-    display:flex;align-items:center;justify-content:center;}
-  .stat .lbl{position:absolute;top:7px;left:8px;font-family:'Work Sans',sans-serif;font-size:calc(var(--fs-statlbl) * 1px);
-    color:var(--text-dim);letter-spacing:.02em;}
-  .stat .num{font-family:'Bebas Neue',sans-serif;font-size:calc(var(--fs-statnum) * 1px);line-height:1;
-    font-variant-numeric:tabular-nums;color:var(--text);}
 
   .grid{display:grid;grid-template-columns:repeat(2, calc(var(--cellw) * 1px));justify-content:center;
     gap:calc(var(--gap) * 1px);padding:18px;}
@@ -110,6 +100,10 @@
   .step-sep{font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--text-dim);}
   .wheel-select{background:var(--panel);border:1px solid var(--border);border-radius:8px;
     color:var(--text);font-family:'Bebas Neue',sans-serif;font-size:18px;padding:6px 8px;flex:1;
+    -webkit-appearance:menulist;appearance:menulist;}
+  .digit-group{display:flex;gap:4px;}
+  .digit-select{width:38px;flex:none;background:var(--panel);border:1px solid var(--border);border-radius:6px;
+    color:var(--text);font-family:'Bebas Neue',sans-serif;font-size:16px;text-align:center;padding:6px 2px;
     -webkit-appearance:menulist;appearance:menulist;}
   .time-row{display:flex;align-items:center;gap:10px;margin-top:10px;}
   .time-row label{font-family:'Work Sans',sans-serif;font-size:11px;color:var(--text-dim);flex:none;}
@@ -159,21 +153,15 @@
             </div>
           </div>
           <p class="subline">【 現在のテーブル状況 】</p>
-          <div class="stats">
-            <div class="stat ring"><p class="lbl">リングゲーム</p><p class="num" id="statRing">0</p></div>
-            <div class="stat tourney"><p class="lbl">トーナメント</p><p class="num" id="statTourney">0</p></div>
-            <div class="stat rental"><p class="lbl">貸卓</p><p class="num" id="statRental">0</p></div>
-            <div class="stat open"><p class="lbl">空卓</p><p class="num" id="statOpen">0</p></div>
+          <div class="detail-row">
+            <span>リングゲーム参加人数 <b id="ringCountDisplay">0</b>人（<span id="ringTableCount">0</span>卓）</span>
           </div>
           <div class="detail-row">
-            <span>リングゲーム参加人数 <b id="ringCountDisplay">0</b>人</span>
-          </div>
-          <div class="detail-row">
-            <span>トーナメントエントリー数 <b id="tourneyDisplay">0/0</b></span>
-            <span class="latereg-tag" id="lateregDisplay"></span>
+            <span>トーナメントエントリー数 <b id="tourneyDisplay">0/0</b>（<span id="tourneyTableCount">0</span>卓）</span>
           </div>
           <div class="detail-row">
             <span id="entryChipsDisplay">Entry ¥0/0chips</span>
+            <span class="latereg-tag" id="lateregDisplay"></span>
           </div>
         </div>
 
@@ -209,11 +197,25 @@
       </div>
     </div>
     <div class="control-block">
-      <p class="control-label">Entry 金額 / スタートチップ</p>
-      <div class="select-pair">
-        <select id="entryFeeSelect" class="wheel-select"></select>
-        <span class="step-sep">/</span>
-        <select id="chipsSelect" class="wheel-select"></select>
+      <p class="control-label">Entry 金額</p>
+      <div class="digit-group" id="entryDigits">
+        <select class="digit-select"></select>
+        <select class="digit-select"></select>
+        <select class="digit-select"></select>
+        <select class="digit-select"></select>
+        <select class="digit-select"></select>
+        <select class="digit-select"></select>
+      </div>
+    </div>
+    <div class="control-block">
+      <p class="control-label">スタートチップ</p>
+      <div class="digit-group" id="chipsDigits">
+        <select class="digit-select"></select>
+        <select class="digit-select"></select>
+        <select class="digit-select"></select>
+        <select class="digit-select"></select>
+        <select class="digit-select"></select>
+        <select class="digit-select"></select>
       </div>
     </div>
     <button class="save-btn" id="saveBtn">画像として保存</button>
@@ -269,10 +271,8 @@
       if (s === 'tourney') tourney++;
       if (s === 'rental') rental++;
     });
-    document.getElementById('statOpen').textContent = open;
-    document.getElementById('statRing').textContent = ring;
-    document.getElementById('statTourney').textContent = tourney;
-    document.getElementById('statRental').textContent = rental;
+    document.getElementById('ringTableCount').textContent = ring;
+    document.getElementById('tourneyTableCount').textContent = tourney;
   }
 
   function tick(){
@@ -341,17 +341,34 @@
   }
   setInterval(updateLateregCountdown, 30000);
 
+  // ---- Entry金額・スタートチップ(桁ごとのスクロール選択、6桁、初期値0) ----
+  function populateDigitSelect(sel){
+    for (var i = 0; i <= 9; i++){
+      var opt = document.createElement('option');
+      opt.value = i;
+      opt.textContent = i;
+      sel.appendChild(opt);
+    }
+  }
+  function setupDigitGroup(containerId, onChange){
+    var selects = Array.prototype.slice.call(document.querySelectorAll('#' + containerId + ' .digit-select'));
+    selects.forEach(function(s){ populateDigitSelect(s); });
+    function getValue(){
+      var str = selects.map(function(s){ return s.value; }).join('');
+      return parseInt(str, 10);
+    }
+    selects.forEach(function(s){
+      s.addEventListener('change', function(){ onChange(getValue()); });
+    });
+  }
+
   var entryFee = 0, chips = 0;
-  var entryFeeSelect = document.getElementById('entryFeeSelect');
-  var chipsSelect = document.getElementById('chipsSelect');
-  populateSelect(entryFeeSelect, 20000, 100);
-  populateSelect(chipsSelect, 100000, 1000);
+  setupDigitGroup('entryDigits', function(v){ entryFee = v; updateEntryChipsDisplay(); });
+  setupDigitGroup('chipsDigits', function(v){ chips = v; updateEntryChipsDisplay(); });
   function updateEntryChipsDisplay(){
     document.getElementById('entryChipsDisplay').textContent =
       'Entry ¥' + entryFee.toLocaleString('ja-JP') + '/' + chips.toLocaleString('ja-JP') + 'chips';
   }
-  entryFeeSelect.addEventListener('change', function(){ entryFee = parseInt(entryFeeSelect.value, 10); updateEntryChipsDisplay(); });
-  chipsSelect.addEventListener('change', function(){ chips = parseInt(chipsSelect.value, 10); updateEntryChipsDisplay(); });
 
   // ---- 画像として保存(フレーム全体=9:16。写真アプリへの保存を優先) ----
   var saveBtn = document.getElementById('saveBtn');
