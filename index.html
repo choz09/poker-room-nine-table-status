@@ -35,6 +35,14 @@
   .frame-wrap{display:flex;justify-content:center;}
   #frame{width:360px;height:640px;background:var(--bg);position:relative;overflow:hidden;
     border-radius:8px;box-shadow:0 24px 60px -20px rgba(0,0,0,.7);flex:none;}
+  /* 店内写真はフレームの余白(カードの外側)だけに敷く背景。カード自体は不透明パネルのまま */
+  #frame::before{content:'';position:absolute;inset:-20px;
+    background-image:url('bg-photo.jpg');
+    background-size:cover;background-position:50% 50%;
+    filter:blur(5px) brightness(.55) saturate(1.05);z-index:-1;}
+  #frame::after{content:'';position:absolute;inset:0;
+    background:linear-gradient(180deg, rgba(5,5,6,.4) 0%, rgba(5,5,6,.72) 45%, rgba(5,5,6,.92) 100%);
+    z-index:-1;}
 
   #card{width:320px;margin:calc(var(--voffset) * 1px) auto 0;
     background:var(--panel);border:1px solid var(--border);border-radius:20px;overflow:hidden;}
