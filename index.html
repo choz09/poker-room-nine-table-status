@@ -256,6 +256,7 @@
     </div>
     <button class="save-btn" id="saveBtn">画像として保存</button>
     <p class="save-status" id="saveStatus"></p>
+    <p class="save-status" id="saveRestrictedNote" hidden>24:00〜9:00は誤操作防止のため画像保存を停止しています</p>
     <button class="reset-btn" id="resetBtn">全卓を空卓にリセット</button>
     <p class="controls-note">保存すると、ストーリーズと同じ比率(9:16)の画像として保存されます。そのままストーリーズの背景としてアップロードできます。</p>
   </div>
@@ -319,6 +320,19 @@
     document.getElementById('flipH2').textContent = hh[1];
     document.getElementById('flipM1').textContent = mm[0];
     document.getElementById('flipM2').textContent = mm[1];
+    updateSaveAvailability();
+  }
+
+  // ---- 24:00〜9:00は誤操作防止のため画像保存を停止 ----
+  var isSaving = false;
+  function isSaveRestrictedNow(){
+    return new Date().getHours() < 9;
+  }
+  function updateSaveAvailability(){
+    var restricted = isSaveRestrictedNow();
+    document.getElementById('saveRestrictedNote').hidden = !restricted;
+    if (isSaving) return;
+    saveBtn.disabled = restricted;
   }
 
   document.getElementById('resetBtn').addEventListener('click', function(){
@@ -423,10 +437,12 @@
   var saveStatus = document.getElementById('saveStatus');
 
   saveBtn.addEventListener('click', function(){
+    if (isSaveRestrictedNow()) { return; }
     if (typeof html2canvas !== 'function') {
       saveStatus.textContent = '保存機能の読み込みに失敗しました。スクリーンショットをご利用ください。';
       return;
     }
+    isSaving = true;
     saveBtn.disabled = true;
     saveStatus.textContent = '画像を作成中...';
     var frame = document.getElementById('frame');
@@ -459,6 +475,7 @@
       if (err && err.name === 'AbortError') { saveStatus.textContent = ''; return; }
       saveStatus.textContent = '保存できませんでした。スクリーンショットをご利用ください。';
     }).finally(function(){
+      isSaving = false;
       saveBtn.disabled = false;
     });
   });
