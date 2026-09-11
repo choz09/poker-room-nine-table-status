@@ -38,15 +38,15 @@
   /* 店内写真はフレームの余白(カードの外側)だけに敷く背景。カード自体は不透明パネルのまま */
   #frame::before{content:'';position:absolute;inset:-20px;
     background-image:url('bg-photo.jpg');
-    background-size:cover;background-position:50% 50%;
-    filter:blur(5px) brightness(.55) saturate(1.05);z-index:-1;}
+    background-size:cover;background-position:50% 0%;
+    filter:blur(3px) brightness(.68) saturate(1.05);z-index:-1;}
   #frame::after{content:'';position:absolute;inset:0;
-    background:linear-gradient(180deg, rgba(5,5,6,.4) 0%, rgba(5,5,6,.72) 45%, rgba(5,5,6,.92) 100%);
+    background:rgba(5,5,6,.42);
     z-index:-1;}
 
   #card{width:320px;margin:calc(var(--voffset) * 1px) auto 0;
     background:var(--panel);border:1px solid var(--border);border-radius:20px;overflow:hidden;}
-  .card-head{padding:26px 22px 22px;border-bottom:1px solid var(--border);}
+  .card-head{padding:20px 20px 16px;border-bottom:1px solid var(--border);}
   .head-top{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;}
   .venue{font-family:'Bebas Neue',sans-serif;font-size:calc(var(--fs-venue) * 1px);letter-spacing:.02em;
     color:var(--text);white-space:nowrap;}
@@ -63,10 +63,10 @@
     background:rgba(0,0,0,.6);transform:translateY(-.5px);}
   .flip-colon{font-family:'Bebas Neue',sans-serif;font-size:calc(var(--fs-clock) * .8px);color:var(--text-dim);padding:0 1px;}
   .subline{font-family:'Zen Kaku Gothic New',sans-serif;font-weight:700;font-size:calc(var(--fs-heading) * 1px);
-    letter-spacing:.02em;color:var(--gold);margin-top:13px;}
+    letter-spacing:.02em;color:var(--gold);margin-top:9px;}
 
   .grid{display:grid;grid-template-columns:repeat(2, calc(var(--cellw) * 1px));justify-content:center;
-    gap:calc(var(--gap) * 1px);padding:24px 20px;}
+    gap:calc(var(--gap) * 1px);padding:18px;}
   .table-cell{position:relative;width:calc(var(--cellw) * 1px);height:calc(var(--cellw) * .55px);
     border-radius:calc(var(--cellw) * .275px);border:1.5px solid transparent;
     display:flex;align-items:center;justify-content:center;padding:9px;
@@ -85,7 +85,7 @@
   .table-cell.is-rental{background:var(--rental-soft);border-color:var(--rental);}
   .table-cell.is-rental .state{color:var(--rental);}
 
-  .legend{display:flex;justify-content:center;gap:10px;padding:0 14px 22px;flex-wrap:wrap;}
+  .legend{display:flex;justify-content:center;gap:10px;padding:0 14px 16px;flex-wrap:wrap;}
   .legend span{display:flex;align-items:center;gap:4px;font-family:'Work Sans',sans-serif;font-size:9.5px;color:var(--text-dim);}
   .legend i{width:8px;height:8px;border-radius:50%;display:inline-block;}
   .legend .i-open{background:var(--green);}
@@ -94,7 +94,7 @@
   .legend .i-rental{background:var(--rental);}
 
   .tel-line{text-align:center;font-family:'Work Sans',sans-serif;font-size:10.5px;letter-spacing:.04em;
-    color:var(--text-dim);padding:0 20px 22px;margin-top:4px;font-variant-numeric:tabular-nums;}
+    color:var(--text-dim);padding:0 20px 16px;font-variant-numeric:tabular-nums;}
   .tel-line b{color:var(--gold);font-weight:600;}
 
   .detail-row{display:flex;flex-wrap:nowrap;justify-content:space-between;gap:8px;margin-top:12px;
