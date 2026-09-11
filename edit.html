@@ -16,7 +16,7 @@
     --tourney:#b9287b; --tourney-soft:rgba(185,40,123,.14);
     --rental:#57bedc; --rental-soft:rgba(87,190,220,.14);
     /* ---- 調整可能な値(このページのスライダーで変更する) ---- */
-    --gap:10; --cellw:140; --voffset:0;
+    --gap:28; --cellw:140; --voffset:39;
     --fs-venue:25; --fs-clock:24; --fs-heading:17;
     --fs-tno:12; --fs-state:16;
   }
@@ -224,7 +224,7 @@
     <h2>間隔・サイズ・位置</h2>
     <div class="control-row">
       <label for="rGap">卓の間隔</label>
-      <input type="range" id="rGap" data-var="--gap" min="0" max="28" value="10">
+      <input type="range" id="rGap" data-var="--gap" min="0" max="28" value="28">
       <output id="oGap">10</output>
     </div>
     <div class="control-row">
@@ -234,7 +234,7 @@
     </div>
     <div class="control-row">
       <label for="rVoffset">全体の縦位置</label>
-      <input type="range" id="rVoffset" data-var="--voffset" min="-120" max="360" value="0">
+      <input type="range" id="rVoffset" data-var="--voffset" min="-120" max="360" value="39">
       <output id="oVoffset">0</output>
     </div>
 
