@@ -19,7 +19,7 @@
     --tourney:#b9287b; --tourney-soft:rgba(185,40,123,.14);
     --rental:#57bedc; --rental-soft:rgba(87,190,220,.14);
     /* ---- 見た目の固定値。edit.htmlで調整した数値をここに反映する ---- */
-    --gap:28; --cellw:140; --voffset:39;
+    --gap:28; --cellw:140; --voffset:0;
     --fs-venue:25; --fs-clock:24; --fs-heading:17;
     --fs-tno:12; --fs-state:16;
   }
@@ -37,7 +37,8 @@
   /* ---------- frame = 保存画像そのもの。ストーリーズと同じ9:16 ---------- */
   .frame-wrap{display:flex;justify-content:center;}
   #frame{width:360px;height:640px;background:var(--bg);position:relative;overflow:hidden;
-    border-radius:8px;box-shadow:0 24px 60px -20px rgba(0,0,0,.7);flex:none;}
+    border-radius:8px;box-shadow:0 24px 60px -20px rgba(0,0,0,.7);flex:none;
+    display:flex;flex-direction:column;justify-content:center;}
   /* 店内写真はフレームの余白(カードの外側)だけに敷く背景。カード自体は不透明パネルのまま */
   #frame::before{content:'';position:absolute;inset:-20px;
     background-image:url('bg-photo.jpg');
@@ -47,7 +48,7 @@
     background:rgba(5,5,6,.42);
     z-index:-1;}
 
-  #card{width:320px;margin:calc(var(--voffset) * 1px) auto 0;
+  #card{width:320px;margin:0 auto;transform:translateY(calc(var(--voffset) * 1px));
     background:var(--panel);border:1px solid var(--border);border-radius:20px;overflow:hidden;}
   .card-head{padding:20px 20px 16px;border-bottom:1px solid var(--border);}
   .head-top{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;}
@@ -258,7 +259,7 @@
     <p class="save-status" id="saveRestrictedNote" hidden>24:00〜9:00は誤操作防止のためコピー機能を停止しています</p>
     <p class="save-status" id="saveStatus"></p>
     <button class="reset-btn" id="resetBtn">全卓を空卓にリセット</button>
-    <p class="controls-note">タップすると、ストーリーズと同じ比率(9:16)の画像がクリップボードにコピーされ、Instagramが開きます。ストーリーズの画面で貼り付けてください。</p>
+    <p class="controls-note">タップすると、ストーリーズと同じ比率(9:16)の画像がクリップボードにコピーされ、Instagramが開きます。「Aa」→テキスト欄を長押し→「ペースト」で画像を貼り付けてください。</p>
   </div>
 </div>
 
