@@ -477,36 +477,49 @@
       saveStatus.textContent = '画像生成の読み込みに失敗しました。スクリーンショットをご利用ください。';
       return;
     }
+    var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    var isAndroid = /Android/.test(navigator.userAgent);
+    var frame = document.getElementById('frame');
+    var scale = 1080 / frame.offsetWidth;
+
+    // Safari対策: クリップボードへの書き込みはタップ直後に同期的に呼び出し、
+    // 画像データは生成中のPromiseとして渡す(画像生成後に呼ぶとユーザー操作の
+    // 直後とみなされずブロックされることがあるため)。
+    var blobPromise = html2canvas(frame, {backgroundColor: null, scale: scale}).then(function(canvas){
+      return new Promise(function(resolve){ canvas.toBlob(resolve, 'image/png'); });
+    });
+
     isSaving = true;
     saveBtn.disabled = true;
     saveStatus.textContent = '画像を作成中...';
-    var frame = document.getElementById('frame');
-    var scale = 1080 / frame.offsetWidth;
-    html2canvas(frame, {backgroundColor: null, scale: scale}).then(function(canvas){
-      return new Promise(function(resolve){ canvas.toBlob(resolve, 'image/png'); });
-    }).then(function(blob){
-      var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-      var isAndroid = /Android/.test(navigator.userAgent);
 
-      if (navigator.clipboard && window.ClipboardItem) {
-        return navigator.clipboard.write([
-          new ClipboardItem({ 'image/png': blob })
-        ]).then(function(){
-          if (isIOS) {
-            saveStatus.textContent = 'コピーしました。Instagramを開いています...';
-            setTimeout(function(){ window.location.href = 'instagram://story-camera'; }, 300);
-          } else if (isAndroid) {
-            saveStatus.textContent = 'コピーしました。Instagramを開いています...';
-            setTimeout(function(){
-              window.location.href = 'intent://story-camera#Intent;package=com.instagram.android;scheme=instagram;end';
-            }, 300);
-          } else {
-            saveStatus.textContent = 'クリップボードにコピーしました。Instagramに貼り付けてください';
-          }
-        });
-      }
+    if (navigator.clipboard && window.ClipboardItem) {
+      navigator.clipboard.write([
+        new ClipboardItem({ 'image/png': blobPromise })
+      ]).then(function(){
+        if (isIOS) {
+          saveStatus.textContent = 'コピーしました。Instagramを開いています...';
+          setTimeout(function(){ window.location.href = 'instagram://story-camera'; }, 300);
+        } else if (isAndroid) {
+          saveStatus.textContent = 'コピーしました。Instagramを開いています...';
+          setTimeout(function(){
+            window.location.href = 'intent://story-camera#Intent;package=com.instagram.android;scheme=instagram;end';
+          }, 300);
+        } else {
+          saveStatus.textContent = 'クリップボードにコピーしました。Instagramに貼り付けてください';
+        }
+      }).catch(function(err){
+        if (err && err.name === 'AbortError') { saveStatus.textContent = ''; return; }
+        saveStatus.textContent = 'コピーできませんでした。スクリーンショットをご利用ください。';
+      }).finally(function(){
+        isSaving = false;
+        saveBtn.disabled = false;
+      });
+      return;
+    }
 
-      // クリップボードAPI非対応の環境向けフォールバック(ファイルとしてダウンロード)
+    // クリップボードAPI非対応の環境向けフォールバック(ファイルとしてダウンロード)
+    blobPromise.then(function(blob){
       var d = new Date();
       var hh = String(d.getHours()).padStart(2, '0');
       var mm = String(d.getMinutes()).padStart(2, '0');
@@ -521,8 +534,7 @@
       setTimeout(function(){ URL.revokeObjectURL(url); }, 4000);
       saveStatus.textContent = 'コピーに未対応の端末のため、ファイルとして保存しました';
     }).catch(function(err){
-      if (err && err.name === 'AbortError') { saveStatus.textContent = ''; return; }
-      saveStatus.textContent = 'コピーできませんでした。スクリーンショットをご利用ください。';
+      saveStatus.textContent = '画像の生成に失敗しました。スクリーンショットをご利用ください。';
     }).finally(function(){
       isSaving = false;
       saveBtn.disabled = false;
