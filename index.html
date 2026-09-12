@@ -274,13 +274,33 @@
     {name:'D卓', states:['open','ring','tourney','rental'], initial:'open'}
   ];
 
+  // ---- 入力内容の保持(ページの予期せぬ再読み込み(iOSのタブ再読み込み等)で情報が消えるのを防ぐ) ----
+  var STORAGE_KEY = 'prn_table_status_v1';
+  function saveState(){
+    try {
+      var state = {
+        cellStates: cells.map(function(c){ return c.dataset.state; }),
+        ringCount: ringCount, tA: tA, tB: tB,
+        lateregTime: lateregTime, entryFee: entryFee, chips: chips
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    } catch (e) {}
+  }
+  function loadState(){
+    try {
+      var raw = localStorage.getItem(STORAGE_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch (e) { return null; }
+  }
+  var savedState = loadState();
+
   var grid = document.getElementById('grid');
   var cells = [];
 
   TABLES.forEach(function(t, i){
     var cell = document.createElement('div');
     cell.className = 'table-cell';
-    cell.dataset.state = t.initial;
+    cell.dataset.state = (savedState && savedState.cellStates && savedState.cellStates[i]) || t.initial;
     cell.dataset.states = t.states.join(',');
     cell.innerHTML = '<span class="tno">' + t.name + '</span><span class="state"></span>';
     cell.addEventListener('click', (function(idx){
@@ -290,6 +310,7 @@
         var next = states[(states.indexOf(c.dataset.state) + 1) % states.length];
         c.dataset.state = next;
         render();
+        saveState();
       };
     })(i));
     grid.appendChild(cell);
@@ -338,10 +359,14 @@
   document.getElementById('resetBtn').addEventListener('click', function(){
     cells.forEach(function(c){ c.dataset.state = 'open'; });
     render();
+    saveState();
   });
 
   // ---- リングゲーム人数・トーナメントエントリー・レジクロ(すべてスクロール選択式) ----
-  var ringCount = 0, tA = 0, tB = 0, lateregTime = '';
+  var ringCount = (savedState && savedState.ringCount) || 0;
+  var tA = (savedState && savedState.tA) || 0;
+  var tB = (savedState && savedState.tB) || 0;
+  var lateregTime = (savedState && savedState.lateregTime) || '';
 
   function populateSelect(sel, max, step){
     step = step || 1;
@@ -355,25 +380,30 @@
 
   var ringSelect = document.getElementById('ringSelect');
   populateSelect(ringSelect, 40);
+  ringSelect.value = ringCount;
   function updateRingDisplay(){
     document.getElementById('ringCountDisplay').textContent = ringCount;
   }
-  ringSelect.addEventListener('change', function(){ ringCount = parseInt(ringSelect.value, 10); updateRingDisplay(); });
+  ringSelect.addEventListener('change', function(){ ringCount = parseInt(ringSelect.value, 10); updateRingDisplay(); saveState(); });
 
   var tASelect = document.getElementById('tASelect');
   var tBSelect = document.getElementById('tBSelect');
   populateSelect(tASelect, 300);
   populateSelect(tBSelect, 300);
+  tASelect.value = tA;
+  tBSelect.value = tB;
   function updateTourneyDisplay(){
     document.getElementById('tourneyDisplay').textContent = tA + '/' + tB;
   }
-  tASelect.addEventListener('change', function(){ tA = parseInt(tASelect.value, 10); updateTourneyDisplay(); });
-  tBSelect.addEventListener('change', function(){ tB = parseInt(tBSelect.value, 10); updateTourneyDisplay(); });
+  tASelect.addEventListener('change', function(){ tA = parseInt(tASelect.value, 10); updateTourneyDisplay(); saveState(); });
+  tBSelect.addEventListener('change', function(){ tB = parseInt(tBSelect.value, 10); updateTourneyDisplay(); saveState(); });
 
   var lateregInput = document.getElementById('lateregInput');
+  lateregInput.value = lateregTime;
   lateregInput.addEventListener('input', function(){
     lateregTime = lateregInput.value;
     updateLateregCountdown();
+    saveState();
   });
 
   function updateLateregCountdown(){
@@ -404,29 +434,34 @@
       sel.appendChild(opt);
     }
   }
-  function setupDigitGroup(containerId, onChange){
+  function setupDigitGroup(containerId, initialValue, onChange){
     var selects = Array.prototype.slice.call(document.querySelectorAll('#' + containerId + ' .digit-select'));
     selects.forEach(function(s){ populateDigitSelect(s); });
+    var digits = String(initialValue).padStart(selects.length, '0').split('');
+    selects.forEach(function(s, i){ s.value = digits[i]; });
     function getValue(){
       var str = selects.map(function(s){ return s.value; }).join('');
       return parseInt(str, 10);
     }
     selects.forEach(function(s){
-      s.addEventListener('change', function(){ onChange(getValue()); });
+      s.addEventListener('change', function(){ onChange(getValue()); saveState(); });
     });
   }
 
-  var entryFee = 0, chips = 0;
-  setupDigitGroup('entryDigits', function(v){
+  var entryFee = (savedState && savedState.entryFee) || 0;
+  var chips = (savedState && savedState.chips) || 0;
+  setupDigitGroup('entryDigits', entryFee, function(v){
     entryFee = v;
     document.getElementById('entryPreview').textContent = '¥' + entryFee.toLocaleString('ja-JP');
     updateEntryChipsDisplay();
   });
-  setupDigitGroup('chipsDigits', function(v){
+  setupDigitGroup('chipsDigits', chips, function(v){
     chips = v;
     document.getElementById('chipsPreview').textContent = chips.toLocaleString('ja-JP');
     updateEntryChipsDisplay();
   });
+  document.getElementById('entryPreview').textContent = '¥' + entryFee.toLocaleString('ja-JP');
+  document.getElementById('chipsPreview').textContent = chips.toLocaleString('ja-JP');
   function updateEntryChipsDisplay(){
     document.getElementById('entryChipsDisplay').textContent =
       'Entry ¥' + entryFee.toLocaleString('ja-JP') + '/' + chips.toLocaleString('ja-JP') + 'chips';
