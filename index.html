@@ -47,9 +47,18 @@
   #frame::after{content:'';position:absolute;inset:0;
     background:rgba(5,5,6,.42);
     z-index:-1;}
+  /* ---- 動画・ブーメランに重ねる用の透過書き出しモード ---- */
+  #frame.frame-overlay-active{background:transparent;box-shadow:none;}
+  #frame.frame-overlay-active::before,
+  #frame.frame-overlay-active::after{opacity:0;}
+  .corner{position:absolute;width:26px;height:26px;display:none;pointer-events:none;}
+  #frame.frame-overlay-active .corner{display:block;}
+  .corner-tl{top:16px;left:16px;border-top:1.5px solid rgba(242,237,225,.6);border-left:1.5px solid rgba(242,237,225,.6);}
+  .corner-br{bottom:16px;right:16px;border-bottom:1.5px solid rgba(242,237,225,.6);border-right:1.5px solid rgba(242,237,225,.6);}
 
   #card{width:320px;margin:0 auto;transform:translateY(calc(var(--voffset) * 1px));
     background:var(--panel);border:1px solid var(--border);border-radius:20px;overflow:hidden;}
+  #frame.frame-overlay-active #card{background:rgba(23,23,29,.6);}
   .card-head{padding:20px 20px 16px;border-bottom:1px solid var(--border);}
   .head-top{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;}
   .venue{font-family:'Bebas Neue',sans-serif;font-size:calc(var(--fs-venue) * 1px);letter-spacing:.02em;
@@ -142,6 +151,11 @@
     font-weight:700;letter-spacing:.02em;cursor:pointer;}
   .save-btn:hover{background:var(--gold);color:#171008;}
   .save-btn:disabled{opacity:.5;cursor:default;}
+  .save-btn-overlay{width:100%;padding:13px;border-radius:10px;border:1px solid var(--border);
+    background:transparent;color:var(--text-dim);font-family:'Work Sans',sans-serif;font-size:12.5px;
+    font-weight:700;letter-spacing:.02em;cursor:pointer;margin-top:10px;}
+  .save-btn-overlay:hover{color:var(--text);border-color:var(--gold);}
+  .save-btn-overlay:disabled{opacity:.5;cursor:default;}
   .reset-btn{margin-top:10px;width:100%;padding:12px;border-radius:10px;border:1px solid var(--border);
     background:var(--panel);color:var(--text-dim);font-family:'Work Sans',sans-serif;font-size:12.5px;
     font-weight:600;cursor:pointer;}
@@ -163,6 +177,8 @@
 
   <div class="frame-wrap">
     <div id="frame">
+      <div class="corner corner-tl"></div>
+      <div class="corner corner-br"></div>
       <div id="card">
         <div class="card-head">
           <div class="head-top">
@@ -256,10 +272,11 @@
       <p class="digit-preview" id="chipsPreview">0</p>
     </div>
     <button class="save-btn" id="saveBtn">コピーしてInstagramを開く</button>
+    <button class="save-btn-overlay" id="saveBtnOverlay">動画に重ねる用にコピー</button>
     <p class="save-status" id="saveRestrictedNote" hidden>24:00〜9:00は誤操作防止のためコピー機能を停止しています</p>
     <p class="save-status" id="saveStatus"></p>
     <button class="reset-btn" id="resetBtn">全卓を空卓にリセット</button>
-    <p class="controls-note">タップすると、ストーリーズと同じ比率(9:16)の画像がクリップボードにコピーされ、Instagramが開きます。「Aa」→テキスト欄を長押し→「ペースト」で画像を貼り付けてください。</p>
+    <p class="controls-note">タップすると、ストーリーズと同じ比率(9:16)の画像がクリップボードにコピーされ、Instagramが開きます。「Aa」→テキスト欄を長押し→「ペースト」で画像を貼り付けてください。<br>「動画に重ねる用にコピー」は背景を透過して書き出すので、店内の動画やブーメランの上に重ねて使えます。</p>
   </div>
 </div>
 
@@ -355,6 +372,7 @@
     document.getElementById('saveRestrictedNote').hidden = !restricted;
     if (isSaving) return;
     saveBtn.disabled = restricted;
+    saveBtnOverlay.disabled = restricted;
   }
 
   document.getElementById('resetBtn').addEventListener('click', function(){
@@ -468,11 +486,12 @@
       'Entry ¥' + entryFee.toLocaleString('ja-JP') + '/' + chips.toLocaleString('ja-JP') + 'chips';
   }
 
-  // ---- コピーしてInstagramを開く(フレーム全体=9:16をクリップボードにコピー、iOSはそのままストーリーズカメラへ) ----
+  // ---- コピーしてInstagramを開く(通常版=フレーム全体、オーバーレイ版=背景透過でカードのみ) ----
   var saveBtn = document.getElementById('saveBtn');
+  var saveBtnOverlay = document.getElementById('saveBtnOverlay');
   var saveStatus = document.getElementById('saveStatus');
 
-  saveBtn.addEventListener('click', function(){
+  function doSave(overlay){
     if (isSaveRestrictedNow()) { return; }
     if (typeof html2canvas !== 'function') {
       saveStatus.textContent = '画像生成の読み込みに失敗しました。スクリーンショットをご利用ください。';
@@ -483,15 +502,20 @@
     var frame = document.getElementById('frame');
     var scale = 1080 / frame.offsetWidth;
 
+    if (overlay) frame.classList.add('frame-overlay-active');
+
     // Safari対策: クリップボードへの書き込みはタップ直後に同期的に呼び出し、
     // 画像データは生成中のPromiseとして渡す(画像生成後に呼ぶとユーザー操作の
     // 直後とみなされずブロックされることがあるため)。
     var blobPromise = html2canvas(frame, {backgroundColor: null, scale: scale}).then(function(canvas){
       return new Promise(function(resolve){ canvas.toBlob(resolve, 'image/png'); });
+    }).finally(function(){
+      if (overlay) frame.classList.remove('frame-overlay-active');
     });
 
     isSaving = true;
     saveBtn.disabled = true;
+    saveBtnOverlay.disabled = true;
     saveStatus.textContent = '画像を作成中...';
 
     if (navigator.clipboard && window.ClipboardItem) {
@@ -515,6 +539,7 @@
       }).finally(function(){
         isSaving = false;
         saveBtn.disabled = false;
+        saveBtnOverlay.disabled = false;
       });
       return;
     }
@@ -524,7 +549,7 @@
       var d = new Date();
       var hh = String(d.getHours()).padStart(2, '0');
       var mm = String(d.getMinutes()).padStart(2, '0');
-      var filename = 'POKER_ROOM_NINE_卓状況_' + hh + mm + '.png';
+      var filename = (overlay ? 'POKER_ROOM_NINE_卓状況_オーバーレイ_' : 'POKER_ROOM_NINE_卓状況_') + hh + mm + '.png';
       var url = URL.createObjectURL(blob);
       var a = document.createElement('a');
       a.href = url;
@@ -539,8 +564,12 @@
     }).finally(function(){
       isSaving = false;
       saveBtn.disabled = false;
+      saveBtnOverlay.disabled = false;
     });
-  });
+  }
+
+  saveBtn.addEventListener('click', function(){ doSave(false); });
+  saveBtnOverlay.addEventListener('click', function(){ doSave(true); });
 
   render();
   tick();
