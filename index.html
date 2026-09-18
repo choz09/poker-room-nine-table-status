@@ -116,11 +116,12 @@
   .detail-row b{font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:16px;color:var(--text);
     font-variant-numeric:tabular-nums;margin:0 2px;}
   .detail-row b.table-count{font-size:14px;}
-  .detail-row .latereg-tag{color:var(--gold);font-weight:600;}
+  .detail-row .latereg-tag,.detail-row .reserve-tag{color:var(--gold);font-weight:600;}
   .ring-group{margin-top:14px;padding-left:8px;border-left:2px solid var(--ring);}
   .tourney-group{margin-top:14px;padding-left:8px;border-left:2px solid var(--tourney);}
   .tourney-group .detail-row{margin-top:8px;}
   .tourney-group .detail-row:first-child{margin-top:0;}
+  .ring-group .detail-row,.tourney-group .detail-row:first-child{flex-wrap:wrap;row-gap:2px;}
   .digit-comma{display:flex;align-items:center;flex:none;font-family:'Bebas Neue',sans-serif;
     font-size:18px;color:var(--text-dim);}
 
@@ -198,14 +199,19 @@
           <div class="ring-group">
             <div class="detail-row">
               <span>リングゲーム参加人数 <b id="ringCountDisplay">0</b>人（<b class="table-count" id="ringTableCount">0</b>卓）</span>
+              <span class="reserve-tag" id="ringReserveDisplay" hidden></span>
             </div>
           </div>
           <div class="tourney-group">
             <div class="detail-row">
               <span>トーナメントエントリー数 <b id="tourneyDisplay">0/0</b>（<b class="table-count" id="tourneyTableCount">0</b>卓）</span>
+              <span class="reserve-tag" id="tourneyReserveDisplay" hidden></span>
             </div>
             <div class="detail-row">
-              <span id="entryChipsDisplay">Entry ¥0/0chips</span>
+              <span id="entryStackDisplay">ENTRY ¥0（STACK 0）</span>
+            </div>
+            <div class="detail-row">
+              <span id="startDisplay"></span>
             </div>
             <div class="detail-row">
               <span class="latereg-tag" id="lateregDisplay"></span>
@@ -232,6 +238,10 @@
     <div class="control-block">
       <p class="control-label">リングゲーム参加人数</p>
       <select id="ringSelect" class="wheel-select"></select>
+      <div class="time-row">
+        <label for="ringReserveSelect">来店予約</label>
+        <select id="ringReserveSelect" class="wheel-select"></select>
+      </div>
     </div>
     <div class="control-block">
       <p class="control-label">トーナメント 人数 / エントリー数</p>
@@ -239,6 +249,14 @@
         <select id="tASelect" class="wheel-select"></select>
         <span class="step-sep">/</span>
         <select id="tBSelect" class="wheel-select"></select>
+      </div>
+      <div class="time-row">
+        <label for="tourneyReserveSelect">来店予約</label>
+        <select id="tourneyReserveSelect" class="wheel-select"></select>
+      </div>
+      <div class="time-row">
+        <label for="startInput">START</label>
+        <input type="time" id="startInput">
       </div>
       <div class="time-row">
         <label for="lateregInput">レジクロ</label>
@@ -299,7 +317,8 @@
       var state = {
         cellStates: cells.map(function(c){ return c.dataset.state; }),
         ringCount: ringCount, tA: tA, tB: tB,
-        lateregTime: lateregTime, entryFee: entryFee, chips: chips
+        ringReserve: ringReserve, tourneyReserve: tourneyReserve,
+        lateregTime: lateregTime, startTime: startTime, entryFee: entryFee, chips: chips
       };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     } catch (e) {}
@@ -385,7 +404,10 @@
   var ringCount = (savedState && savedState.ringCount) || 0;
   var tA = (savedState && savedState.tA) || 0;
   var tB = (savedState && savedState.tB) || 0;
+  var ringReserve = (savedState && savedState.ringReserve) || 0;
+  var tourneyReserve = (savedState && savedState.tourneyReserve) || 0;
   var lateregTime = (savedState && savedState.lateregTime) || '';
+  var startTime = (savedState && savedState.startTime) || '';
 
   function populateSelect(sel, max, step){
     step = step || 1;
@@ -402,8 +424,20 @@
   ringSelect.value = ringCount;
   function updateRingDisplay(){
     document.getElementById('ringCountDisplay').textContent = ringCount;
+    var tag = document.getElementById('ringReserveDisplay');
+    if (ringReserve > 0) {
+      tag.textContent = '予約 ' + ringReserve + '人';
+      tag.hidden = false;
+    } else {
+      tag.hidden = true;
+    }
   }
   ringSelect.addEventListener('change', function(){ ringCount = parseInt(ringSelect.value, 10); updateRingDisplay(); saveState(); });
+
+  var ringReserveSelect = document.getElementById('ringReserveSelect');
+  populateSelect(ringReserveSelect, 40);
+  ringReserveSelect.value = ringReserve;
+  ringReserveSelect.addEventListener('change', function(){ ringReserve = parseInt(ringReserveSelect.value, 10); updateRingDisplay(); saveState(); });
 
   var tASelect = document.getElementById('tASelect');
   var tBSelect = document.getElementById('tBSelect');
@@ -413,15 +447,38 @@
   tBSelect.value = tB;
   function updateTourneyDisplay(){
     document.getElementById('tourneyDisplay').textContent = tA + '/' + tB;
+    var tag = document.getElementById('tourneyReserveDisplay');
+    if (tourneyReserve > 0) {
+      tag.textContent = '予約 ' + tourneyReserve + '人';
+      tag.hidden = false;
+    } else {
+      tag.hidden = true;
+    }
   }
   tASelect.addEventListener('change', function(){ tA = parseInt(tASelect.value, 10); updateTourneyDisplay(); saveState(); });
   tBSelect.addEventListener('change', function(){ tB = parseInt(tBSelect.value, 10); updateTourneyDisplay(); saveState(); });
+
+  var tourneyReserveSelect = document.getElementById('tourneyReserveSelect');
+  populateSelect(tourneyReserveSelect, 300);
+  tourneyReserveSelect.value = tourneyReserve;
+  tourneyReserveSelect.addEventListener('change', function(){ tourneyReserve = parseInt(tourneyReserveSelect.value, 10); updateTourneyDisplay(); saveState(); });
 
   var lateregInput = document.getElementById('lateregInput');
   lateregInput.value = lateregTime;
   lateregInput.addEventListener('input', function(){
     lateregTime = lateregInput.value;
     updateLateregCountdown();
+    saveState();
+  });
+
+  var startInput = document.getElementById('startInput');
+  startInput.value = startTime;
+  function updateStartDisplay(){
+    document.getElementById('startDisplay').textContent = startTime ? ('START ' + startTime) : '';
+  }
+  startInput.addEventListener('input', function(){
+    startTime = startInput.value;
+    updateStartDisplay();
     saveState();
   });
 
@@ -472,18 +529,18 @@
   setupDigitGroup('entryDigits', entryFee, function(v){
     entryFee = v;
     document.getElementById('entryPreview').textContent = '¥' + entryFee.toLocaleString('ja-JP');
-    updateEntryChipsDisplay();
+    updateEntryStackDisplay();
   });
   setupDigitGroup('chipsDigits', chips, function(v){
     chips = v;
     document.getElementById('chipsPreview').textContent = chips.toLocaleString('ja-JP');
-    updateEntryChipsDisplay();
+    updateEntryStackDisplay();
   });
   document.getElementById('entryPreview').textContent = '¥' + entryFee.toLocaleString('ja-JP');
   document.getElementById('chipsPreview').textContent = chips.toLocaleString('ja-JP');
-  function updateEntryChipsDisplay(){
-    document.getElementById('entryChipsDisplay').textContent =
-      'Entry ¥' + entryFee.toLocaleString('ja-JP') + '/' + chips.toLocaleString('ja-JP') + 'chips';
+  function updateEntryStackDisplay(){
+    document.getElementById('entryStackDisplay').textContent =
+      'ENTRY ¥' + entryFee.toLocaleString('ja-JP') + '（STACK ' + chips.toLocaleString('ja-JP') + '）';
   }
 
   // ---- コピーしてInstagramを開く(通常版=フレーム全体、オーバーレイ版=背景透過でカードのみ) ----
@@ -599,7 +656,8 @@
   updateRingDisplay();
   updateTourneyDisplay();
   updateLateregCountdown();
-  updateEntryChipsDisplay();
+  updateStartDisplay();
+  updateEntryStackDisplay();
   setInterval(tick, 30000);
 })();
 </script>
