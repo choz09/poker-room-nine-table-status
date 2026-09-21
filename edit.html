@@ -402,6 +402,29 @@
   document.getElementById('resetBtn').addEventListener('click', function(){
     cells.forEach(function(c){ c.dataset.state = 'open'; });
     render();
+
+    ringCount = 0; tA = 0; tB = 0;
+    ringReserve = 0; tourneyReserve = 0;
+    lateregTime = ''; startTime = '';
+    entryFee = 0; chips = 0;
+
+    ringSelect.value = ringCount;
+    ringReserveSelect.value = ringReserve;
+    tASelect.value = tA;
+    tBSelect.value = tB;
+    tourneyReserveSelect.value = tourneyReserve;
+    lateregInput.value = lateregTime;
+    startInput.value = startTime;
+    resetDigitGroup('entryDigits');
+    resetDigitGroup('chipsDigits');
+    document.getElementById('entryPreview').textContent = '¥0';
+    document.getElementById('chipsPreview').textContent = '0';
+
+    updateRingDisplay();
+    updateTourneyDisplay();
+    updateLateregCountdown();
+    updateStartDisplay();
+    updateEntryStackDisplay();
   });
 
   // ---- リングゲーム人数・トーナメントエントリー・レジクロ(すべてスクロール選択式) ----
@@ -509,6 +532,10 @@
     selects.forEach(function(s){
       s.addEventListener('change', function(){ onChange(getValue()); });
     });
+  }
+  function resetDigitGroup(containerId){
+    var selects = Array.prototype.slice.call(document.querySelectorAll('#' + containerId + ' .digit-select'));
+    selects.forEach(function(s){ s.value = '0'; });
   }
 
   var entryFee = 0, chips = 0;
