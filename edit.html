@@ -333,6 +333,7 @@
     <button class="save-btn" id="saveBtn">この見た目で画像を書き出す</button>
     <p class="save-status" id="saveStatus"></p>
     <button class="reset-btn" id="resetBtn">全卓を空卓にリセット</button>
+    <button class="reset-btn" id="resetTourneyBtn">トーナメント情報だけリセット</button>
 
     <div class="values-box" id="valuesBox"></div>
     <p class="controls-note">調整が終わったら、上の数値ボックスの内容をそのままAIに伝えてください。日常用ページ(スライダーなし版)の初期値としてそのまま反映します。</p>
@@ -399,17 +400,18 @@
     document.getElementById('flipM2').textContent = mm[1];
   }
 
-  document.getElementById('resetBtn').addEventListener('click', function(){
-    cells.forEach(function(c){ c.dataset.state = 'open'; });
-    render();
+  function resetRingFields(){
+    ringCount = 0; ringReserve = 0;
+    ringSelect.value = ringCount;
+    ringReserveSelect.value = ringReserve;
+    updateRingDisplay();
+  }
 
-    ringCount = 0; tA = 0; tB = 0;
-    ringReserve = 0; tourneyReserve = 0;
+  function resetTourneyFields(){
+    tA = 0; tB = 0; tourneyReserve = 0;
     lateregTime = ''; startTime = '';
     entryFee = 0; chips = 0;
 
-    ringSelect.value = ringCount;
-    ringReserveSelect.value = ringReserve;
     tASelect.value = tA;
     tBSelect.value = tB;
     tourneyReserveSelect.value = tourneyReserve;
@@ -420,11 +422,25 @@
     document.getElementById('entryPreview').textContent = '¥0';
     document.getElementById('chipsPreview').textContent = '0';
 
-    updateRingDisplay();
     updateTourneyDisplay();
     updateLateregCountdown();
     updateStartDisplay();
     updateEntryStackDisplay();
+  }
+
+  document.getElementById('resetBtn').addEventListener('click', function(){
+    if (!confirm('全卓を空卓に戻し、リングゲーム・トーナメントの情報もすべてリセットします。よろしいですか?')) return;
+    cells.forEach(function(c){ c.dataset.state = 'open'; });
+    render();
+    resetRingFields();
+    resetTourneyFields();
+  });
+
+  document.getElementById('resetTourneyBtn').addEventListener('click', function(){
+    if (!confirm('トーナメント情報をリセットします(トーナメント卓は空卓に戻ります)。よろしいですか?')) return;
+    cells.forEach(function(c){ if (c.dataset.state === 'tourney') c.dataset.state = 'open'; });
+    render();
+    resetTourneyFields();
   });
 
   // ---- リングゲーム人数・トーナメントエントリー・レジクロ(すべてスクロール選択式) ----

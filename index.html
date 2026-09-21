@@ -294,6 +294,7 @@
     <p class="save-status" id="saveRestrictedNote" hidden>24:00〜9:00は誤操作防止のためコピー機能を停止しています</p>
     <p class="save-status" id="saveStatus"></p>
     <button class="reset-btn" id="resetBtn">全卓を空卓にリセット</button>
+    <button class="reset-btn" id="resetTourneyBtn">トーナメント情報だけリセット</button>
     <p class="controls-note">タップすると共有メニューが開き、Instagramを選べばそのままストーリーズに画像が渡ります(対応していない端末ではクリップボードにコピーされるので、Instagramを開いて「ペースト」で貼り付けてください)。<br>「動画に重ねる用にコピー」は背景を透過して書き出すので、店内の動画やブーメランの上に重ねて使えます。</p>
   </div>
 </div>
@@ -394,17 +395,18 @@
     saveBtnOverlay.disabled = restricted;
   }
 
-  document.getElementById('resetBtn').addEventListener('click', function(){
-    cells.forEach(function(c){ c.dataset.state = 'open'; });
-    render();
+  function resetRingFields(){
+    ringCount = 0; ringReserve = 0;
+    ringSelect.value = ringCount;
+    ringReserveSelect.value = ringReserve;
+    updateRingDisplay();
+  }
 
-    ringCount = 0; tA = 0; tB = 0;
-    ringReserve = 0; tourneyReserve = 0;
+  function resetTourneyFields(){
+    tA = 0; tB = 0; tourneyReserve = 0;
     lateregTime = ''; startTime = '';
     entryFee = 0; chips = 0;
 
-    ringSelect.value = ringCount;
-    ringReserveSelect.value = ringReserve;
     tASelect.value = tA;
     tBSelect.value = tB;
     tourneyReserveSelect.value = tourneyReserve;
@@ -415,11 +417,26 @@
     document.getElementById('entryPreview').textContent = '¥0';
     document.getElementById('chipsPreview').textContent = '0';
 
-    updateRingDisplay();
     updateTourneyDisplay();
     updateLateregCountdown();
     updateStartDisplay();
     updateEntryStackDisplay();
+  }
+
+  document.getElementById('resetBtn').addEventListener('click', function(){
+    if (!confirm('全卓を空卓に戻し、リングゲーム・トーナメントの情報もすべてリセットします。よろしいですか?')) return;
+    cells.forEach(function(c){ c.dataset.state = 'open'; });
+    render();
+    resetRingFields();
+    resetTourneyFields();
+    saveState();
+  });
+
+  document.getElementById('resetTourneyBtn').addEventListener('click', function(){
+    if (!confirm('トーナメント情報をリセットします(トーナメント卓は空卓に戻ります)。よろしいですか?')) return;
+    cells.forEach(function(c){ if (c.dataset.state === 'tourney') c.dataset.state = 'open'; });
+    render();
+    resetTourneyFields();
     saveState();
   });
 
