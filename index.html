@@ -152,6 +152,34 @@
     font-weight:700;letter-spacing:.02em;cursor:pointer;}
   .save-btn:hover{background:var(--gold);color:#171008;}
   .save-btn:disabled{opacity:.5;cursor:default;}
+
+  /* Motion Prompt #085 · MIT License (c) 2026 Shohei Ohtaki · https://showheyohtaki.github.io/motion-prompt/#085
+     リップル: 押した位置から、いちばん遠い角まで 0.6s(easeOutCubic)で円が広がる。白 0.4 → 0 へ 0.3〜0.8s で消える。
+     ボタンの外にははみ出さず(overflow:hidden)、文字は波紋の上に出す */
+  .save-btn,.save-btn-overlay{position:relative;overflow:hidden;}
+  .btn-label{position:relative;z-index:1;}
+  .ripple{position:absolute;border-radius:50%;background:#fff;pointer-events:none;opacity:0;}
+
+  /* Motion Prompt #056 · MIT License (c) 2026 Shohei Ohtaki · https://showheyohtaki.github.io/motion-prompt/#056
+     トースト: #26282c・214幅・角丸10。右から240px滑り込み(0.35s easeOutCubic)、下の3pxの線が1.8sで縮み、
+     0.35s(easeInOutCubic)で右へ退場。画面の右下 18px / 16px の位置 */
+  .toast{position:fixed;right:18px;bottom:calc(16px + env(safe-area-inset-bottom));z-index:50;
+    min-width:214px;max-width:min(300px,calc(100vw - 36px));min-height:52px;padding:14px 16px 17px 14px;
+    background:#26282c;color:#fff;border-radius:10px;box-shadow:0 6px 18px rgba(20,24,40,.25);
+    display:flex;align-items:center;gap:10px;font-family:'Zen Kaku Gothic New',sans-serif;
+    font-size:15px;font-weight:700;line-height:1.35;pointer-events:none;
+    animation:toastIn .35s cubic-bezier(.215,.61,.355,1) both;}
+  .toast.is-out{animation:toastOut .35s cubic-bezier(.645,.045,.355,1) both;}
+  .toast-icon{flex:none;width:22px;height:22px;border-radius:50%;background:var(--green);
+    display:flex;align-items:center;justify-content:center;font-family:'Work Sans',sans-serif;font-size:13px;font-weight:800;}
+  .toast-icon svg{width:12px;height:12px;fill:none;stroke:#fff;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;}
+  .toast.is-error .toast-icon{background:#e0574f;}
+  .toast-life{position:absolute;left:10px;right:10px;bottom:7px;height:3px;border-radius:1.5px;
+    background:var(--gold);transform-origin:left center;animation:toastLife 1.8s linear .35s both;}
+  @keyframes toastIn{from{transform:translateX(240px);}to{transform:translateX(0);}}
+  @keyframes toastOut{from{transform:translateX(0);}to{transform:translateX(240px);}}
+  @keyframes toastLife{from{transform:scaleX(1);}to{transform:scaleX(0);}}
+  @media (prefers-reduced-motion:reduce){.toast,.toast.is-out{animation:none;}.toast.is-out{opacity:0;}}
   .save-btn-overlay{width:100%;padding:13px;border-radius:10px;border:1px solid var(--border);
     background:transparent;color:var(--text-dim);font-family:'Work Sans',sans-serif;font-size:12.5px;
     font-weight:700;letter-spacing:.02em;cursor:pointer;margin-top:10px;}
@@ -165,6 +193,15 @@
     color:var(--text-dim);text-align:center;}
   .controls-note{margin-top:10px;font-family:'Work Sans',sans-serif;font-size:10.5px;color:var(--text-dim);
     text-align:center;line-height:1.6;}
+
+  /* Motion Prompt #063 · MIT License (c) 2026 Shohei Ohtaki · https://showheyohtaki.github.io/motion-prompt/#063
+     ステッパーの弾み: scale 1.18 → 1 を 0.25s で直線的に戻す。タップした卓の状態ラベルと、変わった数字に使う */
+  @keyframes stepPop{from{transform:scale(1.18);}to{transform:scale(1);}}
+  .table-cell .state.is-pop{animation:stepPop .25s linear;}
+  .detail-row b.is-pop{display:inline-block;animation:stepPop .25s linear;}
+  /* 画像書き出し中は動きを止め、動きの途中が写り込まないようにする */
+  #frame.is-capturing *,#frame.is-capturing *::before,#frame.is-capturing *::after{animation:none!important;}
+  @media (prefers-reduced-motion:reduce){.is-pop{animation:none!important;}}
 
   @media (prefers-reduced-motion:reduce){
     .table-cell{transition:none;}
@@ -289,8 +326,8 @@
       </div>
       <p class="digit-preview" id="chipsPreview">0</p>
     </div>
-    <button class="save-btn" id="saveBtn">コピーしてInstagramを開く</button>
-    <button class="save-btn-overlay" id="saveBtnOverlay">動画に重ねる用にコピー</button>
+    <button class="save-btn" id="saveBtn"><span class="btn-label">コピーしてInstagramを開く</span></button>
+    <button class="save-btn-overlay" id="saveBtnOverlay"><span class="btn-label">動画に重ねる用にコピー</span></button>
     <p class="save-status" id="saveRestrictedNote" hidden>24:00〜9:00は誤操作防止のためコピー機能を停止しています</p>
     <p class="save-status" id="saveStatus"></p>
     <button class="reset-btn" id="resetBtn">全卓を空卓にリセット</button>
@@ -332,6 +369,21 @@
   }
   var savedState = loadState();
 
+  // ---- 弾み(Motion Prompt #063 ステッパー) ----
+  // Motion Prompt #063 · MIT License (c) 2026 Shohei Ohtaki · https://showheyohtaki.github.io/motion-prompt/#063
+  // 押した瞬間に scale 1.18 → 1 へ 0.25s で戻る。初期表示では弾ませない(ready になってから)。
+  var ready = false;
+  function popEl(el){
+    if (!ready || !el) return;
+    el.classList.remove('is-pop');
+    void el.offsetWidth;
+    el.classList.add('is-pop');
+  }
+  function setNum(el, v){
+    v = String(v);
+    if (el.textContent !== v) { el.textContent = v; popEl(el); }
+  }
+
   var grid = document.getElementById('grid');
   var cells = [];
 
@@ -348,6 +400,7 @@
         var next = states[(states.indexOf(c.dataset.state) + 1) % states.length];
         c.dataset.state = next;
         render();
+        popEl(c.querySelector('.state'));
         saveState();
       };
     })(i));
@@ -367,8 +420,8 @@
       if (s === 'tourney') tourney++;
       if (s === 'rental') rental++;
     });
-    document.getElementById('ringTableCount').textContent = ring;
-    document.getElementById('tourneyTableCount').textContent = tourney;
+    setNum(document.getElementById('ringTableCount'), ring);
+    setNum(document.getElementById('tourneyTableCount'), tourney);
   }
 
   function tick(){
@@ -463,7 +516,7 @@
   populateSelect(ringSelect, 40);
   ringSelect.value = ringCount;
   function updateRingDisplay(){
-    document.getElementById('ringCountDisplay').textContent = ringCount;
+    setNum(document.getElementById('ringCountDisplay'), ringCount);
     var tag = document.getElementById('ringReserveDisplay');
     if (ringReserve > 0) {
       tag.textContent = '予約 ' + ringReserve + '人';
@@ -486,7 +539,7 @@
   tASelect.value = tA;
   tBSelect.value = tB;
   function updateTourneyDisplay(){
-    document.getElementById('tourneyDisplay').textContent = tA + '/' + tB;
+    setNum(document.getElementById('tourneyDisplay'), tA + '/' + tB);
     var tag = document.getElementById('tourneyReserveDisplay');
     if (tourneyReserve > 0) {
       tag.textContent = '予約 ' + tourneyReserve + '人';
@@ -592,10 +645,62 @@
   var saveBtnOverlay = document.getElementById('saveBtnOverlay');
   var saveStatus = document.getElementById('saveStatus');
 
+  var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)');
+
+  // ---- トースト(Motion Prompt #056) ----
+  // Motion Prompt #056 · MIT License (c) 2026 Shohei Ohtaki · https://showheyohtaki.github.io/motion-prompt/#056
+  // 滑り込み 0.35s → 1.8s表示(下の線が縮む) → 0.35sで退場。結果のお知らせ(完了・失敗)に使う。
+  var toastEl = null, toastTimer = null, toastRemoveTimer = null;
+  function showToast(msg, isError){
+    clearTimeout(toastTimer); clearTimeout(toastRemoveTimer);
+    if (toastEl) toastEl.remove();
+    var el = document.createElement('div');
+    el.className = 'toast' + (isError ? ' is-error' : '');
+    el.setAttribute('role', 'status');
+    var icon = document.createElement('span');
+    icon.className = 'toast-icon';
+    if (isError) { icon.textContent = '!'; }
+    else { icon.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="5,13 10,18 19,7"/></svg>'; }
+    var text = document.createElement('span');
+    text.textContent = msg;
+    var life = document.createElement('i');
+    life.className = 'toast-life';
+    el.appendChild(icon); el.appendChild(text); el.appendChild(life);
+    document.body.appendChild(el);
+    toastEl = el;
+    toastTimer = setTimeout(function(){
+      el.classList.add('is-out');
+      toastRemoveTimer = setTimeout(function(){ el.remove(); if (toastEl === el) toastEl = null; }, 350);
+    }, 350 + 1800);
+  }
+  // 結果のお知らせ: ボタン下の文字は消して、トーストで知らせる
+  function notify(msg, isError){
+    saveStatus.textContent = '';
+    showToast(msg, isError);
+  }
+
+  // ---- リップル(Motion Prompt #085): 保存ボタンを押した位置から波紋が広がる ----
+  // Motion Prompt #085 · MIT License (c) 2026 Shohei Ohtaki · https://showheyohtaki.github.io/motion-prompt/#085
+  function addRipple(btn, e){
+    if (!btn.animate || (reduceMotion && reduceMotion.matches)) return;
+    var r = btn.getBoundingClientRect();
+    // キーボード操作(座標なし)のときは中央から広げる
+    var px = (e.detail === 0) ? r.width / 2 : e.clientX - r.left;
+    var py = (e.detail === 0) ? r.height / 2 : e.clientY - r.top;
+    var R = Math.max(Math.hypot(px, py), Math.hypot(px - r.width, py), Math.hypot(px, py - r.height), Math.hypot(px - r.width, py - r.height));
+    var el = document.createElement('span');
+    el.className = 'ripple';
+    el.style.cssText = 'width:' + (R * 2) + 'px;height:' + (R * 2) + 'px;left:' + (px - R) + 'px;top:' + (py - R) + 'px;';
+    btn.insertBefore(el, btn.firstChild);
+    el.animate([{transform:'scale(0)'}, {transform:'scale(1)'}], {duration:600, easing:'cubic-bezier(.215,.61,.355,1)', fill:'forwards'});
+    var fade = el.animate([{opacity:.4}, {opacity:.4, offset:.375}, {opacity:0}], {duration:800, fill:'forwards'});
+    fade.onfinish = function(){ el.remove(); };
+  }
+
   function doSave(overlay){
     if (isSaveRestrictedNow()) { return; }
     if (typeof html2canvas !== 'function') {
-      saveStatus.textContent = '画像生成の読み込みに失敗しました。スクリーンショットをご利用ください。';
+      notify('画像生成の読み込みに失敗しました。スクリーンショットをご利用ください。', true);
       return;
     }
     var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
@@ -604,6 +709,8 @@
     var scale = 1080 / frame.offsetWidth;
 
     if (overlay) frame.classList.add('frame-overlay-active');
+    // 弾みなどの動きの途中が画像に写り込まないよう、書き出し中は動きを止める
+    frame.classList.add('is-capturing');
 
     // Safari対策: クリップボードへの書き込みはタップ直後に同期的に呼び出し、
     // 画像データは生成中のPromiseとして渡す(画像生成後に呼ぶとユーザー操作の
@@ -612,6 +719,7 @@
       return new Promise(function(resolve){ canvas.toBlob(resolve, 'image/png'); });
     }).finally(function(){
       if (overlay) frame.classList.remove('frame-overlay-active');
+      frame.classList.remove('is-capturing');
     });
 
     isSaving = true;
@@ -639,7 +747,7 @@
         });
       }).catch(function(err){
         if (err && err.name === 'AbortError') { saveStatus.textContent = ''; return; }
-        saveStatus.textContent = '共有できませんでした。スクリーンショットをご利用ください。';
+        notify('共有できませんでした。スクリーンショットをご利用ください。', true);
       }).finally(finish);
       return;
     }
@@ -655,19 +763,19 @@
           new ClipboardItem({ 'image/png': blobPromise })
         ]).then(function(){
           if (isIOS) {
-            saveStatus.textContent = 'コピーしました。Instagramを開いています...';
+            notify('コピーしました。Instagramを開いています...', false);
             setTimeout(function(){ window.location.href = 'instagram://story-camera'; }, 800);
           } else if (isAndroid) {
-            saveStatus.textContent = 'コピーしました。Instagramを開いています...';
+            notify('コピーしました。Instagramを開いています...', false);
             setTimeout(function(){
               window.location.href = 'intent://story-camera#Intent;package=com.instagram.android;scheme=instagram;end';
             }, 800);
           } else {
-            saveStatus.textContent = 'クリップボードにコピーしました。Instagramに貼り付けてください';
+            notify('クリップボードにコピーしました。Instagramに貼り付けてください', false);
           }
         }).catch(function(err){
           if (err && err.name === 'AbortError') { saveStatus.textContent = ''; return; }
-          saveStatus.textContent = 'コピーできませんでした。スクリーンショットをご利用ください。';
+          notify('コピーできませんでした。スクリーンショットをご利用ください。', true);
         });
       }
 
@@ -685,15 +793,15 @@
         a.click();
         a.remove();
         setTimeout(function(){ URL.revokeObjectURL(url); }, 4000);
-        saveStatus.textContent = 'コピーに未対応の端末のため、ファイルとして保存しました';
+        notify('コピーに未対応の端末のため、ファイルとして保存しました', false);
       }).catch(function(err){
-        saveStatus.textContent = '画像の生成に失敗しました。スクリーンショットをご利用ください。';
+        notify('画像の生成に失敗しました。スクリーンショットをご利用ください。', true);
       });
     }
   }
 
-  saveBtn.addEventListener('click', function(){ doSave(false); });
-  saveBtnOverlay.addEventListener('click', function(){ doSave(true); });
+  saveBtn.addEventListener('click', function(e){ addRipple(saveBtn, e); doSave(false); });
+  saveBtnOverlay.addEventListener('click', function(e){ addRipple(saveBtnOverlay, e); doSave(true); });
 
   render();
   tick();
@@ -702,6 +810,7 @@
   updateLateregCountdown();
   updateStartDisplay();
   updateEntryStackDisplay();
+  ready = true;
   setInterval(tick, 30000);
 })();
 </script>
