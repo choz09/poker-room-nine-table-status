@@ -19,6 +19,11 @@
     --ring:#5970f3; --ring-soft:rgba(89,112,243,.14);
     --tourney:#b9287b; --tourney-soft:rgba(185,40,123,.14);
     --rental:#57bedc; --rental-soft:rgba(87,190,220,.14);
+    /* 写真・動画の上で沈まないよう、カード内の文字は明るい版を使う(枠線・縦バーは元の色のまま) */
+    --green-text:#5fd493; --rental-text:#6fd0ee;
+    --ring-text:#8fa0ff; --ring-line:#6f84ff; --ring-fill:rgba(89,112,243,.22);
+    --tourney-text:#ff7ac2; --tourney-line:#e0409a; --tourney-fill:rgba(185,40,123,.22);
+    --card-dim:#c4bdae;
     /* ---- 見た目の固定値。edit.htmlで調整した数値をここに反映する ---- */
     --gap:28; --cellw:140; --voffset:0;
     --fs-venue:25; --fs-clock:24; --fs-heading:17;
@@ -57,9 +62,11 @@
   .corner-tl{top:16px;left:16px;border-top:1.5px solid rgba(242,237,225,.6);border-left:1.5px solid rgba(242,237,225,.6);}
   .corner-br{bottom:16px;right:16px;border-bottom:1.5px solid rgba(242,237,225,.6);border-right:1.5px solid rgba(242,237,225,.6);}
 
-  #card{width:320px;margin:0 auto;transform:translateY(calc(var(--voffset) * 1px));
+  #card{--text-dim:var(--card-dim);text-shadow:0 1px 3px rgba(0,0,0,.6);width:320px;margin:0 auto;transform:translateY(calc(var(--voffset) * 1px));
     background:var(--panel);border:1px solid var(--border);border-radius:20px;overflow:hidden;}
-  #frame.frame-overlay-active #card{background:rgba(23,23,29,.6);}
+  #frame.frame-overlay-active #card{background:rgba(14,14,19,.8);border-color:rgba(255,255,255,.18);
+    box-shadow:0 8px 32px rgba(0,0,0,.45);}
+  #frame.photo-snap #card{background:rgba(14,14,19,.72);}
   .card-head{padding:20px 20px 16px;border-bottom:1px solid var(--border);}
   .head-top{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;}
   .venue{font-family:'Bebas Neue',sans-serif;font-size:calc(var(--fs-venue) * 1px);letter-spacing:.02em;
@@ -91,13 +98,13 @@
   .table-cell .state{font-family:'Zen Kaku Gothic New',sans-serif;font-weight:900;font-size:calc(var(--fs-state) * 1px);
     text-align:center;line-height:1.2;}
   .table-cell.is-open{background:var(--green-soft);border-color:var(--green);}
-  .table-cell.is-open .state{color:var(--green);}
-  .table-cell.is-ring{background:var(--ring-soft);border-color:var(--ring);}
-  .table-cell.is-ring .state{color:var(--ring);}
-  .table-cell.is-tourney{background:var(--tourney-soft);border-color:var(--tourney);}
-  .table-cell.is-tourney .state{color:var(--tourney);}
+  .table-cell.is-open .state{color:var(--green-text);}
+  .table-cell.is-ring{background:var(--ring-fill);border-color:var(--ring-line);}
+  .table-cell.is-ring .state{color:var(--ring-text);}
+  .table-cell.is-tourney{background:var(--tourney-fill);border-color:var(--tourney-line);}
+  .table-cell.is-tourney .state{color:var(--tourney-text);}
   .table-cell.is-rental{background:var(--rental-soft);border-color:var(--rental);}
-  .table-cell.is-rental .state{color:var(--rental);}
+  .table-cell.is-rental .state{color:var(--rental-text);}
 
   /* ---------- 横長(16:9)モード: X投稿・横長写真用。内容は同じで、左=情報 / 右=卓 の2カラムに組み替える ---------- */
   /* 「写真に重ねて保存」を押したときだけ横長になる。プレビューは画面幅に合わせて縮小表示(--fit)。書き出し時は縮小を外して等倍で撮る */
@@ -127,6 +134,7 @@
   .photo-stage img{-webkit-user-drag:none;user-select:none;pointer-events:none;}
   #stagePhoto{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;}
   #stageCard{position:absolute;left:50%;top:50%;width:600px;height:auto;transform-origin:50% 50%;
+    border-radius:20px;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);
     transform:translate(-50%,-50%) translate(var(--tx,0px),var(--ty,0px)) scale(var(--cs,.7));}
   .pe-hint{margin-top:14px;text-align:center;font-family:'Work Sans','Zen Kaku Gothic New',sans-serif;
     font-size:12px;line-height:1.6;color:var(--text-dim);}
@@ -138,11 +146,11 @@
   .photo-block .photo-opts{margin-top:10px;}
 
   .legend{display:flex;justify-content:center;gap:10px;padding:0 14px 16px;flex-wrap:wrap;}
-  .legend span{display:flex;align-items:center;gap:4px;font-family:'Work Sans',sans-serif;font-size:9.5px;color:var(--text-dim);}
+  .legend span{display:flex;align-items:center;gap:4px;font-family:'Work Sans',sans-serif;font-size:9.5px;color:#d6d0c2;}
   .legend i{width:8px;height:8px;border-radius:50%;display:inline-block;}
   .legend .i-open{background:var(--green);}
-  .legend .i-ring{background:var(--ring);}
-  .legend .i-tourney{background:var(--tourney);}
+  .legend .i-ring{background:var(--ring-line);}
+  .legend .i-tourney{background:var(--tourney-line);}
   .legend .i-rental{background:var(--rental);}
 
   .tel-line{text-align:center;font-family:'Work Sans',sans-serif;font-size:10.5px;letter-spacing:.04em;
@@ -832,9 +840,9 @@
     var prevT = frameEl.style.transform;
     frameEl.style.transform = 'none';
     frameWrap.classList.add('is-wide');
-    frameEl.classList.add('frame-overlay-active', 'is-capturing');
+    frameEl.classList.add('frame-overlay-active', 'photo-snap', 'is-capturing');
     return html2canvas(document.getElementById('card'), {backgroundColor: null, scale: 3}).finally(function(){
-      frameEl.classList.remove('frame-overlay-active', 'is-capturing');
+      frameEl.classList.remove('frame-overlay-active', 'photo-snap', 'is-capturing');
       frameEl.style.transform = prevT;
       frameWrap.classList.remove('is-wide');
     });
@@ -898,7 +906,26 @@
       var dw = stagePhoto.naturalWidth * sc, dh = stagePhoto.naturalHeight * sc;
       ctx.drawImage(stagePhoto, (W - dw) / 2, (H - dh) / 2, dw, dh);
       var w = 600 * K * cardPos.s, h = w * cardCanvas.height / cardCanvas.width;
-      ctx.drawImage(cardCanvas, W / 2 + cardPos.x * K - w / 2, H / 2 + cardPos.y * K - h / 2, w, h);
+      var cx = W / 2 + cardPos.x * K - w / 2, cy = H / 2 + cardPos.y * K - h / 2;
+      // カードの裏だけぼかす: 写真を縮小→拡大して作ったぼかし画像を、カードの角丸の形で切り抜いて貼る
+      var d = 12, sm = document.createElement('canvas');
+      sm.width = Math.ceil(W / d); sm.height = Math.ceil(H / d);
+      var sctx = sm.getContext('2d');
+      sctx.imageSmoothingQuality = 'high';
+      sctx.drawImage(c, 0, 0, sm.width, sm.height);
+      var r = 20 * K * cardPos.s;
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(cx + r, cy);
+      ctx.arcTo(cx + w, cy, cx + w, cy + h, r);
+      ctx.arcTo(cx + w, cy + h, cx, cy + h, r);
+      ctx.arcTo(cx, cy + h, cx, cy, r);
+      ctx.arcTo(cx, cy, cx + w, cy, r);
+      ctx.closePath();
+      ctx.clip();
+      ctx.drawImage(sm, 0, 0, W, H);
+      ctx.restore();
+      ctx.drawImage(cardCanvas, cx, cy, w, h);
       c.toBlob(function(b){ b ? resolve(b) : reject(new Error('blob')); }, 'image/png');
     });
   }
