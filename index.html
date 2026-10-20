@@ -136,6 +136,10 @@
   #stageCard{position:absolute;left:50%;top:50%;width:600px;height:auto;transform-origin:50% 50%;
     border-radius:20px;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);
     transform:translate(-50%,-50%) translate(var(--tx,0px),var(--ty,0px)) scale(var(--cs,.7));}
+  #stagePhoto.is-blur{filter:blur(8px);transform:scale(1.04);}
+  .pe-blur{display:flex;align-items:center;gap:8px;margin-top:12px;font-family:'Work Sans','Zen Kaku Gothic New',sans-serif;
+    font-size:13px;font-weight:600;color:var(--text);cursor:pointer;user-select:none;}
+  .pe-blur input{width:18px;height:18px;accent-color:var(--gold);}
   .pe-hint{margin-top:14px;text-align:center;font-family:'Work Sans','Zen Kaku Gothic New',sans-serif;
     font-size:12px;line-height:1.6;color:var(--text-dim);}
   .pe-foot{padding:10px 0 16px;}
@@ -396,6 +400,7 @@
     <div class="stage-wrap" id="stageWrap">
       <div class="photo-stage" id="photoStage"><img id="stagePhoto" alt=""><img id="stageCard" alt=""></div>
     </div>
+    <label class="pe-blur"><input type="checkbox" id="peBlurAll"> 写真全体をぼかす</label>
     <p class="pe-hint">カードをドラッグで移動、ピンチ(PCはホイール)で大きさを変えられます</p>
   </div>
   <div class="pe-foot">
@@ -783,6 +788,37 @@
   var cardCanvas = null;
   // カードの位置(x,y=ステージ中心からのずれ px)と大きさ(s)。ドラッグで移動、ピンチ/ホイールで拡大縮小
   var cardPos = {x:0, y:0, s:.7};
+  var peBlurAll = document.getElementById('peBlurAll');
+  peBlurAll.addEventListener('change', function(){ stagePhoto.classList.toggle('is-blur', peBlurAll.checked); });
+
+  // キャンバスをぼかした複製を返す。ctx.filter が使えない環境(古いSafari等)は、縮小→拡大でぼかす
+  function blurCanvas(src, radius){
+    var W = src.width, H = src.height;
+    var out = document.createElement('canvas');
+    out.width = W; out.height = H;
+    var o = out.getContext('2d');
+    if ('filter' in o) {
+      o.filter = 'blur(' + radius + 'px)';
+      // 端が透けないよう、少し拡大して描く
+      o.drawImage(src, -W * .03, -H * .03, W * 1.06, H * 1.06);
+      o.filter = 'none'; // 後でこのキャンバスに描くものまでぼけないようにする
+      return out;
+    }
+    var steps = Math.max(1, Math.round(Math.log(Math.max(2, radius)) / Math.LN2));
+    var cur = src, cw = W, ch = H;
+    for (var i = 0; i < steps; i++) {
+      var n = document.createElement('canvas');
+      cw = Math.max(2, Math.ceil(cw / 2)); ch = Math.max(2, Math.ceil(ch / 2));
+      n.width = cw; n.height = ch;
+      var nc = n.getContext('2d');
+      nc.imageSmoothingQuality = 'high';
+      nc.drawImage(cur, 0, 0, cw, ch);
+      cur = n;
+    }
+    o.imageSmoothingQuality = 'high';
+    o.drawImage(cur, 0, 0, W, H);
+    return out;
+  }
 
   function fitStage(){
     var sf = Math.max(.3, Math.min((window.innerWidth - 24) / 640, (window.innerHeight - 230) / 360, 1.6));
@@ -867,6 +903,8 @@
     stagePhoto.removeAttribute('src');
     stageCard.removeAttribute('src');
     peStatus.textContent = '';
+    peBlurAll.checked = false;
+    stagePhoto.classList.remove('is-blur');
   }
   function enterPhotoMode(file){
     if (typeof html2canvas !== 'function') {
@@ -905,14 +943,12 @@
       var sc = Math.max(W / stagePhoto.naturalWidth, H / stagePhoto.naturalHeight);
       var dw = stagePhoto.naturalWidth * sc, dh = stagePhoto.naturalHeight * sc;
       ctx.drawImage(stagePhoto, (W - dw) / 2, (H - dh) / 2, dw, dh);
+      // 「写真全体をぼかす」がオンなら、写真全体をぼかした画像に置き換える(プレビューの 8px 相当)
+      if (peBlurAll.checked) { c = blurCanvas(c, 8 * K); ctx = c.getContext('2d'); }
       var w = 600 * K * cardPos.s, h = w * cardCanvas.height / cardCanvas.width;
       var cx = W / 2 + cardPos.x * K - w / 2, cy = H / 2 + cardPos.y * K - h / 2;
-      // カードの裏だけぼかす: 写真を縮小→拡大して作ったぼかし画像を、カードの角丸の形で切り抜いて貼る
-      var d = 12, sm = document.createElement('canvas');
-      sm.width = Math.ceil(W / d); sm.height = Math.ceil(H / d);
-      var sctx = sm.getContext('2d');
-      sctx.imageSmoothingQuality = 'high';
-      sctx.drawImage(c, 0, 0, sm.width, sm.height);
+      // カードの裏だけぼかす: ぼかした写真を、カードの角丸の形で切り抜いて貼る
+      var sm = blurCanvas(c, 8 * K * cardPos.s);
       var r = 20 * K * cardPos.s;
       ctx.save();
       ctx.beginPath();
@@ -923,7 +959,7 @@
       ctx.arcTo(cx, cy, cx + w, cy, r);
       ctx.closePath();
       ctx.clip();
-      ctx.drawImage(sm, 0, 0, W, H);
+      ctx.drawImage(sm, 0, 0);
       ctx.restore();
       ctx.drawImage(cardCanvas, cx, cy, w, h);
       c.toBlob(function(b){ b ? resolve(b) : reject(new Error('blob')); }, 'image/png');
