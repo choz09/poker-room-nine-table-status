@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="format-detection" content="telephone=no">
 <title>POKER ROOM NINE テーブルステータス</title>
 <link rel="icon" href="icon.png">
 <link rel="apple-touch-icon" href="icon.png">
@@ -100,7 +101,7 @@
 
   /* ---------- 横長(16:9)モード: X投稿・横長写真用。内容は同じで、左=情報 / 右=卓 の2カラムに組み替える ---------- */
   /* 「写真に重ねて保存」を押したときだけ横長になる。プレビューは画面幅に合わせて縮小表示(--fit)。書き出し時は縮小を外して等倍で撮る */
-  .frame-wrap.is-wide{display:block;margin:0 auto;width:calc(640px * var(--fit,1));height:calc(360px * var(--fit,1));overflow:hidden;}
+  .frame-wrap.is-wide{position:sticky;top:8px;z-index:5;display:block;margin:0 auto;width:calc(640px * var(--fit,1));height:calc(360px * var(--fit,1));overflow:hidden;}
   .frame-wrap.is-wide #frame{width:640px;height:360px;transform:scale(var(--fit,1));transform-origin:0 0;}
   .is-wide #frame::before{background-position:50% 50%;}
   .is-wide #card{width:600px;display:grid;grid-template-columns:300px 300px;}
@@ -111,15 +112,15 @@
   .is-wide .tel-line{grid-column:1 / -1;border-top:1px solid var(--border);padding:10px 20px 12px;}
 
   /* ---------- 自分の写真に重ねるモード(写真はそのまま見せ、カードの大きさ・位置を調整できる) ---------- */
-  #frame.has-photo::before{inset:0;filter:none;background-position:50% 50%;}
-  #frame.has-photo::after{background:rgba(5,5,6,.08);}
+  /* 写真モード: カードは先に透過画像にしておき、写真の上に<img>として置く(ドラッグ・ピンチで動かす) */
+  .photo-stage{position:absolute;inset:0;overflow:hidden;z-index:2;display:none;}
+  #frame.has-photo .photo-stage{display:block;}
   #frame.has-photo{touch-action:none;cursor:grab;}
-  #frame.has-photo .table-cell{cursor:grab;}
-  #frame.has-photo .table-cell:active{transform:none;}
-  #frame.has-photo #card{position:absolute;left:50%;top:50%;width:320px;margin:0;
-    box-shadow:0 10px 30px rgba(0,0,0,.45);transform-origin:50% 50%;
+  #frame.has-photo::before,#frame.has-photo::after,#frame.has-photo #card{display:none;}
+  .photo-stage img{-webkit-user-drag:none;user-select:none;pointer-events:none;}
+  #stagePhoto{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;}
+  #stageCard{position:absolute;left:50%;top:50%;width:600px;height:auto;transform-origin:50% 50%;
     transform:translate(-50%,-50%) translate(var(--tx,0px),var(--ty,0px)) scale(var(--cs,.7));}
-  .is-wide #frame.has-photo #card{width:600px;}
   .photo-block .photo-btns{display:flex;gap:8px;}
   .photo-block .photo-btns button{flex:1;padding:10px;border-radius:8px;border:1px solid var(--border);
     background:var(--panel);color:var(--text);font-family:'Work Sans',sans-serif;font-size:12px;font-weight:600;cursor:pointer;}
@@ -245,6 +246,7 @@
     <div id="frame">
       <div class="corner corner-tl"></div>
       <div class="corner corner-br"></div>
+      <div class="photo-stage"><img id="stagePhoto" alt=""><img id="stageCard" alt=""></div>
       <div id="card">
         <div class="card-head">
           <div class="head-top">
@@ -808,24 +810,61 @@
     cardPos.s = Math.min(1.6, Math.max(.2, cardPos.s * (e.deltaY < 0 ? 1.06 : 1 / 1.06)));
     applyPhotoOpts();
   }, {passive:false});
-  function enterPhotoMode(file){
-    if (photoUrl) URL.revokeObjectURL(photoUrl);
-    photoUrl = URL.createObjectURL(file);
-    frameEl.style.setProperty('--photo', 'url("' + photoUrl + '")');
-    frameEl.classList.add('has-photo');
-    isWide = true;
+  // カードだけを透過画像にする(動画に重ねる用と同じ見た目。背景は半透明)
+  var cardCanvas = null;
+  function snapshotCard(){
+    var prevT = frameEl.style.transform;
+    frameEl.style.transform = 'none';
     frameWrap.classList.add('is-wide');
-    photoBlock.hidden = false;
-    saveBtn.hidden = true;
-    saveBtnOverlay.hidden = true;
-    savePhotoBtn.querySelector('.btn-label').textContent = 'この内容で保存';
-    cardPos = {x:0, y:0, s:.7};
-    applyPhotoOpts();
-    fitPreview();
+    frameEl.classList.add('frame-overlay-active', 'is-capturing');
+    return html2canvas(document.getElementById('card'), {backgroundColor: null, scale: 3}).finally(function(){
+      frameEl.classList.remove('frame-overlay-active', 'is-capturing');
+      frameEl.style.transform = prevT;
+    });
+  }
+  function loadImg(img, src){
+    return new Promise(function(resolve, reject){
+      img.onload = function(){ resolve(); };
+      img.onerror = function(){ reject(new Error('img')); };
+      img.src = src;
+    });
+  }
+  function enterPhotoMode(file){
+    if (typeof html2canvas !== 'function') {
+      notify('画像生成の読み込みに失敗しました。ページを開き直してください。', true);
+      return;
+    }
+    var newUrl = URL.createObjectURL(file);
+    var already = frameEl.classList.contains('has-photo');
+    saveStatus.textContent = '写真を読み込み中...';
+    var job = already ? Promise.resolve(cardCanvas) : snapshotCard();
+    job.then(function(canvas){
+      cardCanvas = canvas;
+      return Promise.all([loadImg(document.getElementById('stagePhoto'), newUrl),
+                          loadImg(document.getElementById('stageCard'), canvas.toDataURL('image/png'))]);
+    }).then(function(){
+      if (photoUrl) URL.revokeObjectURL(photoUrl);
+      photoUrl = newUrl;
+      isWide = true;
+      frameWrap.classList.add('is-wide');
+      frameEl.classList.add('has-photo');
+      photoBlock.hidden = false;
+      saveBtn.hidden = true;
+      saveBtnOverlay.hidden = true;
+      savePhotoBtn.querySelector('.btn-label').textContent = 'この内容で保存';
+      if (!already) cardPos = {x:0, y:0, s:.7};
+      applyPhotoOpts();
+      fitPreview();
+      saveStatus.textContent = '';
+    }).catch(function(){
+      URL.revokeObjectURL(newUrl);
+      if (!already) frameWrap.classList.remove('is-wide');
+      fitPreview();
+      notify('写真を読み込めませんでした。別の写真でお試しください。', true);
+    });
   }
   function exitPhotoMode(){
     frameEl.classList.remove('has-photo');
-    frameEl.style.removeProperty('--photo');
     isWide = false;
     frameWrap.classList.remove('is-wide');
     photoBlock.hidden = true;
@@ -833,7 +872,25 @@
     saveBtnOverlay.hidden = false;
     savePhotoBtn.querySelector('.btn-label').textContent = '写真に重ねて保存';
     if (photoUrl) { URL.revokeObjectURL(photoUrl); photoUrl = null; }
+    cardCanvas = null;
     fitPreview();
+  }
+  // 写真(cover)+カード画像を1920×1080のキャンバスに重ねて書き出す(プレビューと同じ配置)
+  function composePhotoBlob(){
+    return new Promise(function(resolve, reject){
+      var W = 1920, H = 1080, K = W / 640;
+      var c = document.createElement('canvas');
+      c.width = W; c.height = H;
+      var ctx = c.getContext('2d');
+      ctx.imageSmoothingQuality = 'high';
+      var ph = document.getElementById('stagePhoto');
+      var sc = Math.max(W / ph.naturalWidth, H / ph.naturalHeight);
+      var dw = ph.naturalWidth * sc, dh = ph.naturalHeight * sc;
+      ctx.drawImage(ph, (W - dw) / 2, (H - dh) / 2, dw, dh);
+      var w = 600 * K * cardPos.s, h = w * cardCanvas.height / cardCanvas.width;
+      ctx.drawImage(cardCanvas, W / 2 + cardPos.x * K - w / 2, H / 2 + cardPos.y * K - h / 2, w, h);
+      c.toBlob(function(b){ b ? resolve(b) : reject(new Error('blob')); }, 'image/png');
+    });
   }
   photoInput.addEventListener('change', function(){
     var f = photoInput.files && photoInput.files[0];
@@ -846,15 +903,19 @@
 
   function doSave(overlay, photo){
     if (isSaveRestrictedNow()) { return; }
-    if (typeof html2canvas !== 'function') {
+    if (!photo && typeof html2canvas !== 'function') {
       notify('画像生成の読み込みに失敗しました。スクリーンショットをご利用ください。', true);
       return;
     }
     var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
     var isAndroid = /Android/.test(navigator.userAgent);
     var frame = document.getElementById('frame');
+    var blobPromise;
+    if (photo) {
+      blobPromise = composePhotoBlob();
+    } else {
     // 縦=幅1080px、横=幅1920px(16:9)で書き出す
-    var scale = (isWide ? 1920 : 1080) / frame.offsetWidth;
+    var scale = 1080 / frame.offsetWidth;
     // 横長のプレビュー縮小(transform)は書き出し中だけ外す
     var prevTransform = frame.style.transform;
     frame.style.transform = 'none';
@@ -866,13 +927,15 @@
     // Safari対策: クリップボードへの書き込みはタップ直後に同期的に呼び出し、
     // 画像データは生成中のPromiseとして渡す(画像生成後に呼ぶとユーザー操作の
     // 直後とみなされずブロックされることがあるため)。
-    var blobPromise = html2canvas(frame, {backgroundColor: null, scale: scale}).then(function(canvas){
+    blobPromise = html2canvas(frame, {backgroundColor: null, scale: scale}).then(function(canvas){
       return new Promise(function(resolve){ canvas.toBlob(resolve, 'image/png'); });
     }).finally(function(){
       if (overlay) frame.classList.remove('frame-overlay-active');
       frame.classList.remove('is-capturing');
       frame.style.transform = prevTransform;
     });
+
+    }
 
     isSaving = true;
     saveBtn.disabled = true;
