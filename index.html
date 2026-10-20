@@ -113,15 +113,11 @@
   /* ---------- 自分の写真に重ねるモード(写真はそのまま見せ、カードの大きさ・位置を調整できる) ---------- */
   #frame.has-photo::before{inset:0;filter:none;background-position:50% 50%;}
   #frame.has-photo::after{background:rgba(5,5,6,.08);}
-  #frame.has-photo #card{position:absolute;width:320px;box-shadow:0 10px 30px rgba(0,0,0,.45);
-    transform-origin:var(--ox,50%) var(--oy,50%);transform:scale(var(--cs,.7));}
+  #frame.has-photo{touch-action:none;cursor:grab;}
+  #frame.has-photo #card{position:absolute;left:50%;top:50%;width:320px;margin:0;
+    box-shadow:0 10px 30px rgba(0,0,0,.45);transform-origin:50% 50%;
+    transform:translate(-50%,-50%) translate(var(--tx,0px),var(--ty,0px)) scale(var(--cs,.7));}
   .is-wide #frame.has-photo #card{width:600px;}
-  #frame.has-photo[data-pos="center"] #card{left:50%;top:50%;margin:0;--ox:50%;--oy:50%;
-    transform:translate(-50%,-50%) scale(var(--cs,.7));}
-  #frame.has-photo[data-pos="bl"] #card{left:14px;bottom:14px;margin:0;--ox:0%;--oy:100%;}
-  #frame.has-photo[data-pos="br"] #card{right:14px;bottom:14px;margin:0;--ox:100%;--oy:100%;}
-  #frame.has-photo[data-pos="tl"] #card{left:14px;top:14px;margin:0;--ox:0%;--oy:0%;}
-  #frame.has-photo[data-pos="tr"] #card{right:14px;top:14px;margin:0;--ox:100%;--oy:0%;}
   .photo-block .photo-btns{display:flex;gap:8px;}
   .photo-block .photo-btns button{flex:1;padding:10px;border-radius:8px;border:1px solid var(--border);
     background:var(--panel);color:var(--text);font-family:'Work Sans',sans-serif;font-size:12px;font-weight:600;cursor:pointer;}
@@ -363,22 +359,8 @@
     <button class="save-btn-overlay" id="savePhotoBtn"><span class="btn-label">写真に重ねて保存</span></button>
     <input type="file" id="photoInput" accept="image/*" hidden>
     <div class="control-block photo-block" id="photoBlock" hidden>
-      <p class="control-label">横長(16:9)で書き出します。位置と大きさを調整して、上の「この内容で保存」を押してください</p>
-      <div class="time-row" style="margin-top:0">
-        <label for="posSelect">位置</label>
-        <select id="posSelect" class="wheel-select" style="font-family:'Zen Kaku Gothic New',sans-serif;font-size:14px">
-          <option value="center">中央</option>
-          <option value="bl" selected>左下</option>
-          <option value="br">右下</option>
-          <option value="tl">左上</option>
-          <option value="tr">右上</option>
-        </select>
-      </div>
-      <div class="time-row">
-        <label for="sizeRange">カードの大きさ</label>
-        <input type="range" id="sizeRange" min="40" max="100" value="70">
-      </div>
-      <div class="photo-btns" style="margin-top:12px">
+      <p class="control-label">横長(16:9)で書き出します。カードをドラッグで移動、ピンチ(PCはホイール)で大きさを変えて、上の「この内容で保存」を押してください</p>
+      <div class="photo-btns" style="margin-top:4px">
         <button type="button" id="photoChange">写真を変える</button>
         <button type="button" id="photoClear">やめる(縦に戻す)</button>
       </div>
@@ -766,10 +748,62 @@
     var avail = frameWrap.parentNode.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
     frameWrap.style.setProperty('--fit', isWide ? Math.min(1, avail / 640) : 1);
   }
+  // カードの位置(tx,ty=フレーム中心からのずれ px)と大きさ(cs)。ドラッグで移動、ピンチ/ホイールで拡大縮小
+  var cardPos = {x:0, y:0, s:.7};
   function applyPhotoOpts(){
-    frameEl.dataset.pos = document.getElementById('posSelect').value;
-    frameEl.style.setProperty('--cs', document.getElementById('sizeRange').value / 100);
+    frameEl.style.setProperty('--tx', cardPos.x + 'px');
+    frameEl.style.setProperty('--ty', cardPos.y + 'px');
+    frameEl.style.setProperty('--cs', cardPos.s);
   }
+  function previewFit(){ return parseFloat(frameWrap.style.getPropertyValue('--fit')) || 1; }
+  var pts = {}, gesture = null, dragMoved = false;
+  function ptList(){ return Object.keys(pts).map(function(k){ return pts[k]; }); }
+  function startGesture(){
+    var l = ptList();
+    if (l.length === 1) gesture = {mx:l[0].x, my:l[0].y, x:cardPos.x, y:cardPos.y};
+    else if (l.length >= 2) {
+      var dx = l[0].x - l[1].x, dy = l[0].y - l[1].y;
+      gesture = {d:Math.hypot(dx, dy) || 1, s:cardPos.s, mx:(l[0].x + l[1].x) / 2, my:(l[0].y + l[1].y) / 2, x:cardPos.x, y:cardPos.y};
+    } else gesture = null;
+  }
+  frameEl.addEventListener('pointerdown', function(e){
+    if (!frameEl.classList.contains('has-photo')) return;
+    pts[e.pointerId] = {x:e.clientX, y:e.clientY};
+    dragMoved = false;
+    startGesture();
+  });
+  window.addEventListener('pointermove', function(e){
+    if (!pts[e.pointerId] || !gesture) return;
+    pts[e.pointerId] = {x:e.clientX, y:e.clientY};
+    var l = ptList(), f = previewFit();
+    var mx, my;
+    if (l.length >= 2) {
+      var d = Math.hypot(l[0].x - l[1].x, l[0].y - l[1].y);
+      cardPos.s = Math.min(1.6, Math.max(.2, gesture.s * d / gesture.d));
+      mx = (l[0].x + l[1].x) / 2; my = (l[0].y + l[1].y) / 2;
+    } else { mx = l[0].x; my = l[0].y; }
+    cardPos.x = gesture.x + (mx - gesture.mx) / f;
+    cardPos.y = gesture.y + (my - gesture.my) / f;
+    if (Math.abs(mx - gesture.mx) + Math.abs(my - gesture.my) > 6) dragMoved = true;
+    applyPhotoOpts();
+  });
+  function endPointer(e){
+    if (!pts[e.pointerId]) return;
+    delete pts[e.pointerId];
+    startGesture();
+  }
+  window.addEventListener('pointerup', endPointer);
+  window.addEventListener('pointercancel', endPointer);
+  // ドラッグした直後のクリックで卓の状態が切り替わらないようにする
+  frameEl.addEventListener('click', function(e){
+    if (dragMoved) { e.stopPropagation(); e.preventDefault(); dragMoved = false; }
+  }, true);
+  frameEl.addEventListener('wheel', function(e){
+    if (!frameEl.classList.contains('has-photo')) return;
+    e.preventDefault();
+    cardPos.s = Math.min(1.6, Math.max(.2, cardPos.s * (e.deltaY < 0 ? 1.06 : 1 / 1.06)));
+    applyPhotoOpts();
+  }, {passive:false});
   function enterPhotoMode(file){
     if (photoUrl) URL.revokeObjectURL(photoUrl);
     photoUrl = URL.createObjectURL(file);
@@ -781,6 +815,7 @@
     saveBtn.hidden = true;
     saveBtnOverlay.hidden = true;
     savePhotoBtn.querySelector('.btn-label').textContent = 'この内容で保存';
+    cardPos = {x:0, y:0, s:.7};
     applyPhotoOpts();
     fitPreview();
   }
@@ -803,8 +838,6 @@
   });
   document.getElementById('photoChange').addEventListener('click', function(){ photoInput.click(); });
   document.getElementById('photoClear').addEventListener('click', exitPhotoMode);
-  document.getElementById('posSelect').addEventListener('change', applyPhotoOpts);
-  document.getElementById('sizeRange').addEventListener('input', applyPhotoOpts);
   window.addEventListener('resize', fitPreview);
 
   function doSave(overlay, photo){
