@@ -101,26 +101,36 @@
 
   /* ---------- 横長(16:9)モード: X投稿・横長写真用。内容は同じで、左=情報 / 右=卓 の2カラムに組み替える ---------- */
   /* 「写真に重ねて保存」を押したときだけ横長になる。プレビューは画面幅に合わせて縮小表示(--fit)。書き出し時は縮小を外して等倍で撮る */
-  .frame-wrap.is-wide{position:sticky;top:8px;z-index:5;display:block;margin:0 auto;width:calc(640px * var(--fit,1));height:calc(360px * var(--fit,1));overflow:hidden;}
+  .frame-wrap.is-wide{display:block;margin:0 auto;width:calc(640px * var(--fit,1));height:calc(360px * var(--fit,1));overflow:hidden;}
   .frame-wrap.is-wide #frame{width:640px;height:360px;transform:scale(var(--fit,1));transform-origin:0 0;}
   .is-wide #frame::before{background-position:50% 50%;}
   .is-wide #card{width:600px;display:grid;grid-template-columns:300px 300px;}
-  .is-wide .card-head{border-bottom:0;border-right:1px solid var(--border);padding:18px 18px 12px;}
-  .is-wide .card-side{padding-top:6px;--cellw:116;--gap:16;}
+  .is-wide .card-head{border-bottom:0;padding:18px 18px 12px;}
+  .is-wide .card-side{padding-top:34px;--cellw:116;--gap:16;}
+  .is-wide .card-side .table-cell .state{font-size:13px;white-space:nowrap;}
   .is-wide .card-side .grid{padding:12px 16px;}
   .is-wide .card-side .legend{padding:0 10px 12px;}
-  .is-wide .tel-line{grid-column:1 / -1;border-top:1px solid var(--border);padding:10px 20px 12px;}
+  .is-wide .tel-line{grid-column:1 / -1;padding:10px 20px 12px;}
 
   /* ---------- 自分の写真に重ねるモード(写真はそのまま見せ、カードの大きさ・位置を調整できる) ---------- */
-  /* 写真モード: カードは先に透過画像にしておき、写真の上に<img>として置く(ドラッグ・ピンチで動かす) */
-  .photo-stage{position:absolute;inset:0;overflow:hidden;z-index:2;display:none;}
-  #frame.has-photo .photo-stage{display:block;}
-  #frame.has-photo{touch-action:none;cursor:grab;}
-  #frame.has-photo::before,#frame.has-photo::after,#frame.has-photo #card{display:none;}
+  /* 写真に重ねる専用の全画面エディタ。カードは先に透過画像にしておき、写真の上に<img>として置く(ドラッグ・ピンチで動かす) */
+  .photo-editor{position:fixed;inset:0;z-index:100;background:#050506;display:flex;flex-direction:column;
+    padding:env(safe-area-inset-top) 12px env(safe-area-inset-bottom);}
+  .pe-bar{display:flex;justify-content:space-between;gap:10px;padding:12px 0;}
+  .pe-bar button{padding:9px 16px;border-radius:999px;border:1px solid var(--border);background:var(--panel);
+    color:var(--text);font-family:'Work Sans','Zen Kaku Gothic New',sans-serif;font-size:13px;font-weight:600;cursor:pointer;}
+  .pe-body{flex:1;min-height:0;display:flex;flex-direction:column;justify-content:center;align-items:center;}
+  .stage-wrap{position:relative;flex:none;width:calc(640px * var(--sf,1));height:calc(360px * var(--sf,1));
+    border-radius:8px;overflow:hidden;box-shadow:0 24px 60px -20px rgba(0,0,0,.7);background:#111;}
+  .photo-stage{position:absolute;left:0;top:0;width:640px;height:360px;overflow:hidden;
+    transform:scale(var(--sf,1));transform-origin:0 0;touch-action:none;cursor:grab;}
   .photo-stage img{-webkit-user-drag:none;user-select:none;pointer-events:none;}
   #stagePhoto{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;}
   #stageCard{position:absolute;left:50%;top:50%;width:600px;height:auto;transform-origin:50% 50%;
     transform:translate(-50%,-50%) translate(var(--tx,0px),var(--ty,0px)) scale(var(--cs,.7));}
+  .pe-hint{margin-top:14px;text-align:center;font-family:'Work Sans','Zen Kaku Gothic New',sans-serif;
+    font-size:12px;line-height:1.6;color:var(--text-dim);}
+  .pe-foot{padding:10px 0 16px;}
   .photo-block .photo-btns{display:flex;gap:8px;}
   .photo-block .photo-btns button{flex:1;padding:10px;border-radius:8px;border:1px solid var(--border);
     background:var(--panel);color:var(--text);font-family:'Work Sans',sans-serif;font-size:12px;font-weight:600;cursor:pointer;}
@@ -192,7 +202,7 @@
   /* Motion Prompt #056 · MIT License (c) 2026 Shohei Ohtaki · https://showheyohtaki.github.io/motion-prompt/#056
      トースト: #26282c・214幅・角丸10。右から240px滑り込み(0.35s easeOutCubic)、下の3pxの線が1.8sで縮み、
      0.35s(easeInOutCubic)で右へ退場。画面の右下 18px / 16px の位置 */
-  .toast{position:fixed;right:18px;bottom:calc(16px + env(safe-area-inset-bottom));z-index:50;
+  .toast{position:fixed;right:18px;bottom:calc(16px + env(safe-area-inset-bottom));z-index:200;
     min-width:214px;max-width:min(300px,calc(100vw - 36px));min-height:52px;padding:14px 16px 17px 14px;
     background:#26282c;color:#fff;border-radius:10px;box-shadow:0 6px 18px rgba(20,24,40,.25);
     display:flex;align-items:center;gap:10px;font-family:'Zen Kaku Gothic New',sans-serif;
@@ -246,7 +256,6 @@
     <div id="frame">
       <div class="corner corner-tl"></div>
       <div class="corner corner-br"></div>
-      <div class="photo-stage"><img id="stagePhoto" alt=""><img id="stageCard" alt=""></div>
       <div id="card">
         <div class="card-head">
           <div class="head-top">
@@ -362,18 +371,28 @@
     <button class="save-btn-overlay" id="saveBtnOverlay"><span class="btn-label">動画に重ねる用にコピー</span></button>
     <button class="save-btn-overlay" id="savePhotoBtn"><span class="btn-label">写真に重ねて保存</span></button>
     <input type="file" id="photoInput" accept="image/*" hidden>
-    <div class="control-block photo-block" id="photoBlock" hidden>
-      <p class="control-label">横長(16:9)で書き出します。カードをドラッグで移動、ピンチ(PCはホイール)で大きさを変えて、上の「この内容で保存」を押してください(卓の状態を変えるときは「やめる」で縦に戻ってください)</p>
-      <div class="photo-btns" style="margin-top:4px">
-        <button type="button" id="photoChange">写真を変える</button>
-        <button type="button" id="photoClear">やめる(縦に戻す)</button>
-      </div>
-    </div>
     <p class="save-status" id="saveRestrictedNote" hidden>24:00〜9:00は誤操作防止のためコピー機能を停止しています</p>
     <p class="save-status" id="saveStatus"></p>
     <button class="reset-btn" id="resetBtn">全卓を空卓にリセット</button>
     <button class="reset-btn" id="resetTourneyBtn">トーナメント情報だけリセット</button>
-    <p class="controls-note">タップすると共有メニューが開き、Instagramを選べばそのままストーリーズに画像が渡ります(対応していない端末ではクリップボードにコピーされるので、Instagramを開いて「ペースト」で貼り付けてください)。<br>「動画に重ねる用にコピー」は背景を透過して書き出すので、店内の動画やブーメランの上に重ねて使えます。<br>「写真に重ねて保存」は、選んだ写真の上にカードを重ねた横長(16:9)の画像を保存します(X投稿などに)。</p>
+    <p class="controls-note">タップすると共有メニューが開き、Instagramを選べばそのままストーリーズに画像が渡ります(対応していない端末ではクリップボードにコピーされるので、Instagramを開いて「ペースト」で貼り付けてください)。<br>「動画に重ねる用にコピー」は背景を透過して書き出すので、店内の動画やブーメランの上に重ねて使えます。<br>「写真に重ねて保存」は、選んだ写真の上にカードを重ねた横長(16:9)の画像を専用画面で作って保存します(X投稿などに)。</p>
+  </div>
+</div>
+
+<div class="photo-editor" id="photoEditor" hidden>
+  <div class="pe-bar">
+    <button type="button" id="peCancel">キャンセル</button>
+    <button type="button" id="peChange">写真を変える</button>
+  </div>
+  <div class="pe-body">
+    <div class="stage-wrap" id="stageWrap">
+      <div class="photo-stage" id="photoStage"><img id="stagePhoto" alt=""><img id="stageCard" alt=""></div>
+    </div>
+    <p class="pe-hint">カードをドラッグで移動、ピンチ(PCはホイール)で大きさを変えられます</p>
+  </div>
+  <div class="pe-foot">
+    <button class="save-btn" id="peSave"><span class="btn-label">この内容で保存</span></button>
+    <p class="save-status" id="peStatus"></p>
   </div>
 </div>
 
@@ -436,8 +455,6 @@
     cell.innerHTML = '<span class="tno">' + t.name + '</span><span class="state"></span>';
     cell.addEventListener('click', (function(idx){
       return function(){
-        // 写真に重ねている間は、位置合わせ中の誤タップを防ぐため卓の切り替えを無効にする
-        if (document.getElementById('frame').classList.contains('has-photo')) return;
         var c = cells[idx];
         var states = c.dataset.states.split(',');
         var next = states[(states.indexOf(c.dataset.state) + 1) % states.length];
@@ -490,6 +507,7 @@
     saveBtn.disabled = restricted;
     saveBtnOverlay.disabled = restricted;
     savePhotoBtn.disabled = restricted;
+    peSave.disabled = restricted;
   }
 
   function resetRingFields(){
@@ -720,6 +738,7 @@
   // 結果のお知らせ: ボタン下の文字は消して、トーストで知らせる
   function notify(msg, isError){
     saveStatus.textContent = '';
+    peStatus.textContent = '';
     showToast(msg, isError);
   }
 
@@ -741,28 +760,33 @@
     fade.onfinish = function(){ el.remove(); };
   }
 
-  // ---- 写真に重ねて保存(この時だけ横長16:9。写真は端末内だけで処理し、アップロードはしない) ----
+  // ---- 写真に重ねて保存(専用の全画面エディタで完結。この時だけ横長16:9。写真は端末内だけで処理し、アップロードはしない) ----
   var frameWrap = document.getElementById('frameWrap');
   var frameEl = document.getElementById('frame');
   var photoInput = document.getElementById('photoInput');
   var savePhotoBtn = document.getElementById('savePhotoBtn');
-  var photoBlock = document.getElementById('photoBlock');
+  var editor = document.getElementById('photoEditor');
+  var stageEl = document.getElementById('photoStage');
+  var stagePhoto = document.getElementById('stagePhoto');
+  var stageCard = document.getElementById('stageCard');
+  var peSave = document.getElementById('peSave');
+  var peStatus = document.getElementById('peStatus');
   var photoUrl = null;
-  var isWide = false;
-  function fitPreview(){
-    var cs = getComputedStyle(frameWrap.parentNode);
-    var avail = frameWrap.parentNode.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
-    frameWrap.style.setProperty('--fit', isWide ? Math.min(1, avail / 640) : 1);
-  }
-  // カードの位置(tx,ty=フレーム中心からのずれ px)と大きさ(cs)。ドラッグで移動、ピンチ/ホイールで拡大縮小
+  var cardCanvas = null;
+  // カードの位置(x,y=ステージ中心からのずれ px)と大きさ(s)。ドラッグで移動、ピンチ/ホイールで拡大縮小
   var cardPos = {x:0, y:0, s:.7};
-  function applyPhotoOpts(){
-    frameEl.style.setProperty('--tx', cardPos.x + 'px');
-    frameEl.style.setProperty('--ty', cardPos.y + 'px');
-    frameEl.style.setProperty('--cs', cardPos.s);
+
+  function fitStage(){
+    var sf = Math.max(.3, Math.min((window.innerWidth - 24) / 640, (window.innerHeight - 230) / 360, 1.6));
+    editor.style.setProperty('--sf', sf);
   }
-  function previewFit(){ return parseFloat(frameWrap.style.getPropertyValue('--fit')) || 1; }
-  var pts = {}, gesture = null, dragMoved = false;
+  function previewFit(){ return parseFloat(editor.style.getPropertyValue('--sf')) || 1; }
+  function applyPhotoOpts(){
+    stageEl.style.setProperty('--tx', cardPos.x + 'px');
+    stageEl.style.setProperty('--ty', cardPos.y + 'px');
+    stageEl.style.setProperty('--cs', cardPos.s);
+  }
+  var pts = {}, gesture = null;
   function ptList(){ return Object.keys(pts).map(function(k){ return pts[k]; }); }
   function startGesture(){
     var l = ptList();
@@ -772,17 +796,14 @@
       gesture = {d:Math.hypot(dx, dy) || 1, s:cardPos.s, mx:(l[0].x + l[1].x) / 2, my:(l[0].y + l[1].y) / 2, x:cardPos.x, y:cardPos.y};
     } else gesture = null;
   }
-  frameEl.addEventListener('pointerdown', function(e){
-    if (!frameEl.classList.contains('has-photo')) return;
+  stageEl.addEventListener('pointerdown', function(e){
     pts[e.pointerId] = {x:e.clientX, y:e.clientY};
-    dragMoved = false;
     startGesture();
   });
   window.addEventListener('pointermove', function(e){
     if (!pts[e.pointerId] || !gesture) return;
     pts[e.pointerId] = {x:e.clientX, y:e.clientY};
-    var l = ptList(), f = previewFit();
-    var mx, my;
+    var l = ptList(), f = previewFit(), mx, my;
     if (l.length >= 2) {
       var d = Math.hypot(l[0].x - l[1].x, l[0].y - l[1].y);
       cardPos.s = Math.min(1.6, Math.max(.2, gesture.s * d / gesture.d));
@@ -790,7 +811,6 @@
     } else { mx = l[0].x; my = l[0].y; }
     cardPos.x = gesture.x + (mx - gesture.mx) / f;
     cardPos.y = gesture.y + (my - gesture.my) / f;
-    if (Math.abs(mx - gesture.mx) + Math.abs(my - gesture.my) > 6) dragMoved = true;
     applyPhotoOpts();
   });
   function endPointer(e){
@@ -800,18 +820,14 @@
   }
   window.addEventListener('pointerup', endPointer);
   window.addEventListener('pointercancel', endPointer);
-  // ドラッグした直後のクリックで卓の状態が切り替わらないようにする
-  frameEl.addEventListener('click', function(e){
-    if (dragMoved) { e.stopPropagation(); e.preventDefault(); dragMoved = false; }
-  }, true);
-  frameEl.addEventListener('wheel', function(e){
-    if (!frameEl.classList.contains('has-photo')) return;
+  stageEl.addEventListener('wheel', function(e){
     e.preventDefault();
     cardPos.s = Math.min(1.6, Math.max(.2, cardPos.s * (e.deltaY < 0 ? 1.06 : 1 / 1.06)));
     applyPhotoOpts();
   }, {passive:false});
+  window.addEventListener('resize', fitStage);
+
   // カードだけを透過画像にする(動画に重ねる用と同じ見た目。背景は半透明)
-  var cardCanvas = null;
   function snapshotCard(){
     var prevT = frameEl.style.transform;
     frameEl.style.transform = 'none';
@@ -820,6 +836,7 @@
     return html2canvas(document.getElementById('card'), {backgroundColor: null, scale: 3}).finally(function(){
       frameEl.classList.remove('frame-overlay-active', 'is-capturing');
       frameEl.style.transform = prevT;
+      frameWrap.classList.remove('is-wide');
     });
   }
   function loadImg(img, src){
@@ -829,51 +846,45 @@
       img.src = src;
     });
   }
+  function openEditor(){
+    editor.hidden = false;
+    document.body.style.overflow = 'hidden';
+    fitStage();
+  }
+  function closeEditor(){
+    editor.hidden = true;
+    document.body.style.overflow = '';
+    if (photoUrl) { URL.revokeObjectURL(photoUrl); photoUrl = null; }
+    cardCanvas = null;
+    stagePhoto.removeAttribute('src');
+    stageCard.removeAttribute('src');
+    peStatus.textContent = '';
+  }
   function enterPhotoMode(file){
     if (typeof html2canvas !== 'function') {
       notify('画像生成の読み込みに失敗しました。ページを開き直してください。', true);
       return;
     }
     var newUrl = URL.createObjectURL(file);
-    var already = frameEl.classList.contains('has-photo');
-    saveStatus.textContent = '写真を読み込み中...';
+    var already = !editor.hidden && !!cardCanvas;
+    if (!already) openEditor();
+    peStatus.textContent = '写真を読み込み中...';
     var job = already ? Promise.resolve(cardCanvas) : snapshotCard();
     job.then(function(canvas){
       cardCanvas = canvas;
-      return Promise.all([loadImg(document.getElementById('stagePhoto'), newUrl),
-                          loadImg(document.getElementById('stageCard'), canvas.toDataURL('image/png'))]);
+      return Promise.all([loadImg(stagePhoto, newUrl),
+                          already ? Promise.resolve() : loadImg(stageCard, canvas.toDataURL('image/png'))]);
     }).then(function(){
       if (photoUrl) URL.revokeObjectURL(photoUrl);
       photoUrl = newUrl;
-      isWide = true;
-      frameWrap.classList.add('is-wide');
-      frameEl.classList.add('has-photo');
-      photoBlock.hidden = false;
-      saveBtn.hidden = true;
-      saveBtnOverlay.hidden = true;
-      savePhotoBtn.querySelector('.btn-label').textContent = 'この内容で保存';
       if (!already) cardPos = {x:0, y:0, s:.7};
       applyPhotoOpts();
-      fitPreview();
-      saveStatus.textContent = '';
+      peStatus.textContent = '';
     }).catch(function(){
       URL.revokeObjectURL(newUrl);
-      if (!already) frameWrap.classList.remove('is-wide');
-      fitPreview();
+      if (!already) closeEditor();
       notify('写真を読み込めませんでした。別の写真でお試しください。', true);
     });
-  }
-  function exitPhotoMode(){
-    frameEl.classList.remove('has-photo');
-    isWide = false;
-    frameWrap.classList.remove('is-wide');
-    photoBlock.hidden = true;
-    saveBtn.hidden = false;
-    saveBtnOverlay.hidden = false;
-    savePhotoBtn.querySelector('.btn-label').textContent = '写真に重ねて保存';
-    if (photoUrl) { URL.revokeObjectURL(photoUrl); photoUrl = null; }
-    cardCanvas = null;
-    fitPreview();
   }
   // 写真(cover)+カード画像を1920×1080のキャンバスに重ねて書き出す(プレビューと同じ配置)
   function composePhotoBlob(){
@@ -883,10 +894,9 @@
       c.width = W; c.height = H;
       var ctx = c.getContext('2d');
       ctx.imageSmoothingQuality = 'high';
-      var ph = document.getElementById('stagePhoto');
-      var sc = Math.max(W / ph.naturalWidth, H / ph.naturalHeight);
-      var dw = ph.naturalWidth * sc, dh = ph.naturalHeight * sc;
-      ctx.drawImage(ph, (W - dw) / 2, (H - dh) / 2, dw, dh);
+      var sc = Math.max(W / stagePhoto.naturalWidth, H / stagePhoto.naturalHeight);
+      var dw = stagePhoto.naturalWidth * sc, dh = stagePhoto.naturalHeight * sc;
+      ctx.drawImage(stagePhoto, (W - dw) / 2, (H - dh) / 2, dw, dh);
       var w = 600 * K * cardPos.s, h = w * cardCanvas.height / cardCanvas.width;
       ctx.drawImage(cardCanvas, W / 2 + cardPos.x * K - w / 2, H / 2 + cardPos.y * K - h / 2, w, h);
       c.toBlob(function(b){ b ? resolve(b) : reject(new Error('blob')); }, 'image/png');
@@ -897,9 +907,8 @@
     if (f) enterPhotoMode(f);
     photoInput.value = '';
   });
-  document.getElementById('photoChange').addEventListener('click', function(){ photoInput.click(); });
-  document.getElementById('photoClear').addEventListener('click', exitPhotoMode);
-  window.addEventListener('resize', fitPreview);
+  document.getElementById('peChange').addEventListener('click', function(){ photoInput.click(); });
+  document.getElementById('peCancel').addEventListener('click', closeEditor);
 
   function doSave(overlay, photo){
     if (isSaveRestrictedNow()) { return; }
@@ -941,13 +950,16 @@
     saveBtn.disabled = true;
     saveBtnOverlay.disabled = true;
     savePhotoBtn.disabled = true;
-    saveStatus.textContent = '画像を作成中...';
+    peSave.disabled = true;
+    var statusEl = photo ? peStatus : saveStatus;
+    statusEl.textContent = '画像を作成中...';
 
     function finish(){
       isSaving = false;
       saveBtn.disabled = false;
       saveBtnOverlay.disabled = false;
       savePhotoBtn.disabled = false;
+      peSave.disabled = false;
     }
 
     // ---- 通常版はまずWeb Share APIで直接Instagramに渡す(共有シート経由、クリップボード不要) ----
@@ -960,10 +972,11 @@
           return copyToClipboard();
         }
         return navigator.share({ files: [file] }).then(function(){
-          saveStatus.textContent = '';
+          statusEl.textContent = '';
+          if (photo) closeEditor();
         });
       }).catch(function(err){
-        if (err && err.name === 'AbortError') { saveStatus.textContent = ''; return; }
+        if (err && err.name === 'AbortError') { statusEl.textContent = ''; return; }
         notify('共有できませんでした。スクリーンショットをご利用ください。', true);
       }).finally(finish);
       return;
@@ -1011,6 +1024,7 @@
         a.remove();
         setTimeout(function(){ URL.revokeObjectURL(url); }, 4000);
         notify(photo ? '画像を保存しました(ダウンロードフォルダ)' : 'コピーに未対応の端末のため、ファイルとして保存しました', false);
+        if (photo) closeEditor();
       }).catch(function(err){
         notify('画像の生成に失敗しました。スクリーンショットをご利用ください。', true);
       });
@@ -1019,11 +1033,12 @@
 
   saveBtn.addEventListener('click', function(e){ addRipple(saveBtn, e); doSave(false); });
   saveBtnOverlay.addEventListener('click', function(e){ addRipple(saveBtnOverlay, e); doSave(true); });
-  // 1回目: 写真を選ぶ(選ぶと横長プレビューに切り替わる) / 2回目以降: その内容で保存
-  savePhotoBtn.addEventListener('click', function(e){
-    if (!frameEl.classList.contains('has-photo')) { photoInput.click(); return; }
-    addRipple(savePhotoBtn, e); doSave(false, true);
+  // 写真を選ぶと専用の全画面エディタが開く(そこで位置・大きさを調整して保存)
+  savePhotoBtn.addEventListener('click', function(){
+    if (isSaveRestrictedNow()) return;
+    photoInput.click();
   });
+  peSave.addEventListener('click', function(e){ addRipple(peSave, e); doSave(false, true); });
 
   render();
   tick();
