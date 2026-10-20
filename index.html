@@ -114,6 +114,8 @@
   #frame.has-photo::before{inset:0;filter:none;background-position:50% 50%;}
   #frame.has-photo::after{background:rgba(5,5,6,.08);}
   #frame.has-photo{touch-action:none;cursor:grab;}
+  #frame.has-photo .table-cell{cursor:grab;}
+  #frame.has-photo .table-cell:active{transform:none;}
   #frame.has-photo #card{position:absolute;left:50%;top:50%;width:320px;margin:0;
     box-shadow:0 10px 30px rgba(0,0,0,.45);transform-origin:50% 50%;
     transform:translate(-50%,-50%) translate(var(--tx,0px),var(--ty,0px)) scale(var(--cs,.7));}
@@ -359,7 +361,7 @@
     <button class="save-btn-overlay" id="savePhotoBtn"><span class="btn-label">写真に重ねて保存</span></button>
     <input type="file" id="photoInput" accept="image/*" hidden>
     <div class="control-block photo-block" id="photoBlock" hidden>
-      <p class="control-label">横長(16:9)で書き出します。カードをドラッグで移動、ピンチ(PCはホイール)で大きさを変えて、上の「この内容で保存」を押してください</p>
+      <p class="control-label">横長(16:9)で書き出します。カードをドラッグで移動、ピンチ(PCはホイール)で大きさを変えて、上の「この内容で保存」を押してください(卓の状態を変えるときは「やめる」で縦に戻ってください)</p>
       <div class="photo-btns" style="margin-top:4px">
         <button type="button" id="photoChange">写真を変える</button>
         <button type="button" id="photoClear">やめる(縦に戻す)</button>
@@ -432,6 +434,8 @@
     cell.innerHTML = '<span class="tno">' + t.name + '</span><span class="state"></span>';
     cell.addEventListener('click', (function(idx){
       return function(){
+        // 写真に重ねている間は、位置合わせ中の誤タップを防ぐため卓の切り替えを無効にする
+        if (document.getElementById('frame').classList.contains('has-photo')) return;
         var c = cells[idx];
         var states = c.dataset.states.split(',');
         var next = states[(states.indexOf(c.dataset.state) + 1) % states.length];
